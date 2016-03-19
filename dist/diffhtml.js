@@ -276,6 +276,7 @@ Object.defineProperty(exports, 'DOMException', {
     return _errors.DOMException;
   }
 });
+exports.html = html;
 exports.outerHTML = outerHTML;
 exports.innerHTML = innerHTML;
 exports.element = element;
@@ -305,7 +306,50 @@ var _custom = _dereq_('./element/custom');
 
 var _memory = _dereq_('./util/memory');
 
+var _parser = _dereq_('./util/parser');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// Make a parser.
+var parser = (0, _parser.makeParser)();
+
+/**
+ * Parses a tagged template literal into a diffHTML Virtual DOM representation.
+ *
+ * @param strings
+ * @param ...values
+ *
+ * @return
+ */
+function html(strings) {
+  for (var _len = arguments.length, values = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    values[_key - 1] = arguments[_key];
+  }
+
+  // Do not attempt to parse empty strings.
+  if (!strings[0].length && !values.length) {
+    return null;
+  }
+
+  // Parse only the text, no dynamic bits.
+  if (strings.length === 1 && !values.length) {
+    return parser.parse(strings[0]).childNodes[0];
+  }
+
+  var retVal = [];
+
+  // Loop over the strings and interpolate the values.
+  strings.forEach(function (string) {
+    retVal.push(string);
+
+    if (values.length) {
+      retVal.push(values.shift());
+    }
+  });
+
+  // Return the firstChild of the parsed elements.
+  return parser.parse(retVal.join('')).childNodes[0];
+}
 
 /**
  * Used to diff the outerHTML contents of the passed element with the markup
@@ -653,7 +697,7 @@ function enableProllyfill() {
   }
 }
 
-},{"./element/custom":1,"./errors":4,"./node/make":6,"./node/patch":7,"./node/release":8,"./node/tree":10,"./transitions":13,"./util/memory":15}],6:[function(_dereq_,module,exports){
+},{"./element/custom":1,"./errors":4,"./node/make":6,"./node/patch":7,"./node/release":8,"./node/tree":10,"./transitions":13,"./util/memory":15,"./util/parser":16}],6:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -963,8 +1007,10 @@ function patchNode(element, newHTML, options) {
 
     if (typeof newHTML === 'string') {
       newTree = (0, _parser.parseHTML)(newHTML, options.inner);
-    } else {
+    } else if (newHTML.ownerDocument) {
       newTree = (0, _make2.default)(newHTML);
+    } else {
+      newTree = newHTML;
     }
 
     if (options.inner) {
