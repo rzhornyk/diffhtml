@@ -26,9 +26,7 @@ module.exports = function(config) {
 
     coverageReporter: {
       type: 'lcov',
-      dir: 'test/coverage',
-      instrumenters: { isparta: isparta },
-      instrumenter: { '**/*.js': 'isparta' }
+      dir: 'test/coverage'
     },
 
     browserify: {
@@ -36,6 +34,7 @@ module.exports = function(config) {
 
       transform: [
         [istanbul({
+          ignore: ['**/worker/**'],
           instrumenter: isparta,
           instrumenterConfig: {
             babel: {
