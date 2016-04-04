@@ -1658,8 +1658,8 @@ function process(element, patches) {
                 if (patch.value === undefined) {
                   el.removeAttribute(patch.name);
 
-                  if (patch.name === 'checked') {
-                    el.checked = false;
+                  if (patch.name in el) {
+                    el[patch.name] = undefined;
                   }
                 }
                 // Change.
@@ -1670,7 +1670,7 @@ function process(element, patches) {
                     (0, _custom.upgrade)(patch.element.nodeName, el, patch.element);
 
                     // Support live updating of the value attribute.
-                    if (patch.name === 'value' || patch.name === 'checked') {
+                    if (patch.name in el) {
                       el[patch.name] = patch.value;
                     }
                   }
