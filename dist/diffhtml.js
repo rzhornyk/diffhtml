@@ -615,9 +615,9 @@ function enableProllyfill() {
         set: function set(val) {
           val = Object.keys(val).length ? val : Object.getPrototypeOf(val);
 
-          for (var _key in val) {
-            if (val.hasOwnProperty(_key)) {
-              this[_key] = val[_key];
+          for (var _key2 in val) {
+            if (val.hasOwnProperty(_key2)) {
+              this[_key2] = val[_key2];
             }
           }
         }
