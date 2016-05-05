@@ -284,4 +284,23 @@ describe('Integration: Basics', function() {
       assert.ok(this.fixture.querySelector('custom-element'));
     });
   });
+
+  describe('iframe[srcdoc]', function() {
+    it.only('supports basic injection', function(done) {
+      diff.innerHTML(this.fixture, `<iframe srcdoc="${`
+        <b>Test</b>
+      `}"></iframe>`);
+
+      console.log(this.fixture.innerHTML);
+
+
+      var iframe = this.fixture.firstChild;
+
+      iframe.onload = () => {
+        var actual = iframe.contentWindow.document.querySelector('b');
+        assert.equal(actual.nodeValue, 'Test');
+        done();
+      };
+    });
+  });
 });
