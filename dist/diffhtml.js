@@ -915,6 +915,9 @@ function patchNode(element, newHTML, options) {
       } else {
         invokeRender();
       }
+      console.log(patches.map(function (x) {
+        return x;
+      }));
     };
 
     if (typeof newHTML !== 'string') {
@@ -977,12 +980,12 @@ function patchNode(element, newHTML, options) {
     }
 
     // Synchronize the tree.
-    var patches = (0, _sync2.default)(elementMeta.oldTree, newTree);
+    var _patches = (0, _sync2.default)(elementMeta.oldTree, newTree);
     var invokeRender = (0, _render.completeRender)(element, elementMeta);
 
     // Process the data immediately and wait until all transition callbacks
     // have completed.
-    var promises = (0, _process2.default)(element, patches);
+    var promises = (0, _process2.default)(element, _patches);
 
     // Operate synchronously unless opted into a Promise-chain.
     if (promises.length) {
@@ -1119,10 +1122,15 @@ function sync(oldTree, newTree, patches) {
   var newElement = newTree.uuid;
   var nodeName = newTree.nodeName;
   var newIsTextNode = nodeName === '#text';
+  var oldIsFragment = oldTree.nodeName === '#document-fragment';
+  var newIsFragment = newTree.nodeName === '#document-fragment';
+  var skipAttributeCompare = false;
 
   // If the element we're replacing is totally different from the previous
   // replace the entire element, don't bother investigating children.
-  if (oldTree.nodeName !== newTree.nodeName) {
+  if (oldIsFragment || newIsFragment) {
+    skipAttributeCompare = true;
+  } else if (oldTree.nodeName !== newTree.nodeName) {
     patches.push({
       __do__: REPLACE_ENTIRE_ELEMENT,
       old: oldTree,
@@ -1217,7 +1225,7 @@ function sync(oldTree, newTree, patches) {
   // Synchronize attributes
   var attributes = newTree.attributes;
 
-  if (attributes) {
+  if (attributes && !skipAttributeCompare) {
     var oldLength = oldTree.attributes.length;
     var newLength = attributes.length;
 
