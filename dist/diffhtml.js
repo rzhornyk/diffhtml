@@ -107,7 +107,7 @@ function get(descriptor) {
   return { uuid: uuid, element: element };
 }
 
-},{"../element/make":3,"../node/make":6}],3:[function(_dereq_,module,exports){
+},{"../element/make":3,"../node/make":7}],3:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -165,7 +165,12 @@ function make(descriptor) {
     if (descriptor.attributes && descriptor.attributes.length) {
       for (var i = 0; i < descriptor.attributes.length; i++) {
         var attribute = descriptor.attributes[i];
-        element.setAttribute(attribute.name, attribute.value);
+
+        if (typeof attribute.value === 'string') {
+          element.setAttribute(attribute.name, attribute.value);
+        } else {
+          element[attribute.name] = attribute.value;
+        }
       }
     }
 
@@ -192,7 +197,7 @@ function make(descriptor) {
   return element;
 }
 
-},{"../node/make":6,"../svg":12,"../util/entities":14,"./custom":1}],4:[function(_dereq_,module,exports){
+},{"../node/make":7,"../svg":13,"../util/entities":15,"./custom":1}],4:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -258,57 +263,12 @@ var DOMException = exports.DOMException = function (_Error2) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.DOMException = exports.TransitionStateError = undefined;
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-var _errors = _dereq_('./errors');
-
-Object.defineProperty(exports, 'TransitionStateError', {
-  enumerable: true,
-  get: function get() {
-    return _errors.TransitionStateError;
-  }
-});
-Object.defineProperty(exports, 'DOMException', {
-  enumerable: true,
-  get: function get() {
-    return _errors.DOMException;
-  }
-});
 exports.html = html;
-exports.outerHTML = outerHTML;
-exports.innerHTML = innerHTML;
-exports.element = element;
-exports.release = release;
-exports.registerElement = registerElement;
-exports.addTransitionState = addTransitionState;
-exports.removeTransitionState = removeTransitionState;
-exports.enableProllyfill = enableProllyfill;
-
-var _patch = _dereq_('./node/patch');
-
-var _patch2 = _interopRequireDefault(_patch);
-
-var _release = _dereq_('./node/release');
-
-var _release2 = _interopRequireDefault(_release);
-
-var _make = _dereq_('./node/make');
-
-var _make2 = _interopRequireDefault(_make);
-
-var _tree = _dereq_('./node/tree');
-
-var _transitions = _dereq_('./transitions');
-
-var _custom = _dereq_('./element/custom');
-
-var _memory = _dereq_('./util/memory');
 
 var _parser = _dereq_('./util/parser');
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // Make a parser.
 var parser = (0, _parser.makeParser)();
@@ -373,6 +333,70 @@ function html(strings) {
 
   return parser.parse(retVal.join(''), supplemental).childNodes[0];
 }
+
+},{"./util/parser":17}],6:[function(_dereq_,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.html = exports.DOMException = exports.TransitionStateError = undefined;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var _errors = _dereq_('./errors');
+
+Object.defineProperty(exports, 'TransitionStateError', {
+  enumerable: true,
+  get: function get() {
+    return _errors.TransitionStateError;
+  }
+});
+Object.defineProperty(exports, 'DOMException', {
+  enumerable: true,
+  get: function get() {
+    return _errors.DOMException;
+  }
+});
+
+var _html = _dereq_('./html');
+
+Object.defineProperty(exports, 'html', {
+  enumerable: true,
+  get: function get() {
+    return _html.html;
+  }
+});
+exports.outerHTML = outerHTML;
+exports.innerHTML = innerHTML;
+exports.element = element;
+exports.release = release;
+exports.registerElement = registerElement;
+exports.addTransitionState = addTransitionState;
+exports.removeTransitionState = removeTransitionState;
+exports.enableProllyfill = enableProllyfill;
+
+var _patch = _dereq_('./node/patch');
+
+var _patch2 = _interopRequireDefault(_patch);
+
+var _release = _dereq_('./node/release');
+
+var _release2 = _interopRequireDefault(_release);
+
+var _make = _dereq_('./node/make');
+
+var _make2 = _interopRequireDefault(_make);
+
+var _tree = _dereq_('./node/tree');
+
+var _transitions = _dereq_('./transitions');
+
+var _custom = _dereq_('./element/custom');
+
+var _memory = _dereq_('./util/memory');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
  * Used to diff the outerHTML contents of the passed element with the markup
@@ -548,6 +572,14 @@ function removeTransitionState(state, callback) {
  * benefit from the performance gains of DOM diffing.
  */
 function enableProllyfill() {
+  // Exposes the `html` tagged template helper globally so that developers
+  // can trivially craft VDOMs.
+  Object.defineProperty(window, 'html', {
+    configurable: true,
+
+    value: _html.html
+  });
+
   // Exposes the `TransitionStateError` constructor globally so that developers
   // can instanceof check exception errors.
   Object.defineProperty(window, 'TransitionStateError', {
@@ -638,9 +670,9 @@ function enableProllyfill() {
         set: function set(val) {
           val = Object.keys(val).length ? val : Object.getPrototypeOf(val);
 
-          for (var _key2 in val) {
-            if (val.hasOwnProperty(_key2)) {
-              this[_key2] = val[_key2];
+          for (var _key in val) {
+            if (val.hasOwnProperty(_key)) {
+              this[_key] = val[_key];
             }
           }
         }
@@ -720,7 +752,7 @@ function enableProllyfill() {
   }
 }
 
-},{"./element/custom":1,"./errors":4,"./node/make":6,"./node/patch":7,"./node/release":8,"./node/tree":10,"./transitions":13,"./util/memory":15,"./util/parser":16}],6:[function(_dereq_,module,exports){
+},{"./element/custom":1,"./errors":4,"./html":5,"./node/make":7,"./node/patch":8,"./node/release":9,"./node/tree":11,"./transitions":14,"./util/memory":16}],7:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -798,6 +830,9 @@ function make(node) {
   // If the element has child nodes, convert them all to virtual nodes.
   if (nodeType !== 3 && childNodesLength) {
     for (var _i = 0; _i < childNodesLength; _i++) {
+      if (childNodes[_i] === '<__DIFFHTML/>') {
+        console.log('here');
+      }
       var newNode = make(childNodes[_i]);
 
       if (newNode) {
@@ -821,7 +856,7 @@ function make(node) {
   return entry;
 }
 
-},{"../element/custom":1,"../util/pools":17}],7:[function(_dereq_,module,exports){
+},{"../element/custom":1,"../util/pools":18}],8:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1067,7 +1102,7 @@ function patchNode(element, newHTML, options) {
   }
 }
 
-},{"../patches/process":11,"../util/memory":15,"../util/parser":16,"../util/pools":17,"../util/render":18,"../worker/create":20,"./make":6,"./sync":9,"./tree":10}],8:[function(_dereq_,module,exports){
+},{"../patches/process":12,"../util/memory":16,"../util/parser":17,"../util/pools":18,"../util/render":19,"../worker/create":21,"./make":7,"./sync":10,"./tree":11}],9:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1124,7 +1159,7 @@ function releaseNode(element) {
   (0, _memory.cleanMemory)(_make2.default);
 }
 
-},{"../util/memory":15,"../util/pools":17,"./make":6,"./tree":10}],9:[function(_dereq_,module,exports){
+},{"../util/memory":16,"../util/pools":18,"./make":7,"./tree":11}],10:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1378,7 +1413,7 @@ function sync(oldTree, newTree, patches) {
   return patches;
 }
 
-},{"../util/pools":17}],10:[function(_dereq_,module,exports){
+},{"../util/pools":18}],11:[function(_dereq_,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1387,7 +1422,7 @@ Object.defineProperty(exports, "__esModule", {
 // Cache prebuilt trees and lookup by element.
 var TreeCache = exports.TreeCache = new Map();
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1734,6 +1769,7 @@ function process(element, patches) {
                 // Change.
                 else {
                     // Is an attribute.
+                    console.log('hello', patch);
                     if (typeof patch.value === 'string') {
                       el.setAttribute(patch.name, patch.value);
                     }
@@ -1784,7 +1820,7 @@ function process(element, patches) {
   return promises.filter(Boolean);
 }
 
-},{"../element/custom":1,"../element/get":2,"../node/make":6,"../node/sync":9,"../node/tree":10,"../transitions":13,"../util/entities":14,"../util/memory":15,"../util/pools":17}],12:[function(_dereq_,module,exports){
+},{"../element/custom":1,"../element/get":2,"../node/make":7,"../node/sync":10,"../node/tree":11,"../transitions":14,"../util/entities":15,"../util/memory":16,"../util/pools":18}],13:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -1796,7 +1832,7 @@ var elements = exports.elements = ['altGlyph', 'altGlyphDef', 'altGlyphItem', 'a
 // Namespace.
 var namespace = exports.namespace = 'http://www.w3.org/2000/svg';
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],14:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2070,7 +2106,7 @@ function makePromises(stateName) {
   };
 }
 
-},{"./element/custom":1,"./node/make":6}],14:[function(_dereq_,module,exports){
+},{"./element/custom":1,"./node/make":7}],15:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2092,7 +2128,7 @@ function decodeEntities(string) {
   return element.textContent;
 }
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2193,7 +2229,7 @@ function cleanMemory(makeNode) {
   attributeObject.cache.allocated.clear();
 }
 
-},{"../node/make":6,"../util/pools":17}],16:[function(_dereq_,module,exports){
+},{"../node/make":7,"../util/pools":18}],17:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2562,7 +2598,7 @@ function makeParser() {
   return htmlParser;
 }
 
-},{"./pools":17}],17:[function(_dereq_,module,exports){
+},{"./pools":18}],18:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2658,7 +2694,7 @@ function initializePools(COUNT) {
 // Create ${COUNT} items of each type.
 initializePools(count);
 
-},{"./uuid":19}],18:[function(_dereq_,module,exports){
+},{"./uuid":20}],19:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2731,7 +2767,7 @@ function completeRender(element, elementMeta) {
   };
 }
 
-},{"../node/make":6,"../node/patch":7,"../node/tree":10,"../util/memory":15,"../util/pools":17,"custom-event":22}],19:[function(_dereq_,module,exports){
+},{"../node/make":7,"../node/patch":8,"../node/tree":11,"../util/memory":16,"../util/pools":18,"custom-event":23}],20:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2752,7 +2788,7 @@ function uuid() {
   });
 }
 
-},{}],20:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -2844,7 +2880,7 @@ function create() {
   return worker;
 }
 
-},{"../node/make":6,"../node/sync":9,"../util/memory":15,"../util/parser":16,"../util/pools":17,"../util/uuid":19,"./source":21}],21:[function(_dereq_,module,exports){
+},{"../node/make":7,"../node/sync":10,"../util/memory":16,"../util/parser":17,"../util/pools":18,"../util/uuid":20,"./source":22}],22:[function(_dereq_,module,exports){
 'use strict';
 
 // These are globally defined to avoid issues with JSHint thinking that we're
@@ -2945,7 +2981,7 @@ function startup(worker) {
   };
 }
 
-},{}],22:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 (function (global){
 
 var NativeCustomEvent = global.CustomEvent;
@@ -2997,5 +3033,5 @@ function CustomEvent (type, params) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[5])(5)
+},{}]},{},[6])(6)
 });
