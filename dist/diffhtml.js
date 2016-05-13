@@ -337,42 +337,41 @@ function html(strings) {
   }
 
   var retVal = [];
+  var supplemental = {
+    props: [],
+    children: []
+  };
 
   // Loop over the strings and interpolate the values.
   strings.forEach(function (string) {
     retVal.push(string);
 
     if (values.length) {
-      retVal.push(values.shift());
+      var value = values.shift();
+      var lastSegment = string.split(' ').pop();
+      var lastCharacter = lastSegment.trim().slice(-1);
+      var isProp = Boolean(lastCharacter.match(/(=|'|")/));
+      var isChildren = lastCharacter === '>';
+
+      if (isProp) {
+        supplemental.props.push(value);
+        retVal.push('__DIFFHTML__');
+      } else if (isChildren) {
+        if (typeof value === 'string') {
+          retVal.push(value);
+        } else if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object') {
+          throw new Error('Children must be a string or object');
+        }
+
+        supplemental.children.push(value);
+        retVal.push('<__DIFFHTML__/>');
+      } else {
+        retVal.push(String(value));
+      }
     }
   });
 
-  console.log(JSON.stringify(arguments[1], null, 2));
-  var cantJoin = values.some(function (val) {
-    return typeof val !== 'string';
-  });
-
-  // Return the firstChild of the parsed elements.
-  if (cantJoin) {
-    console.log('here');
-    return retVal.reduce(function recurse(currentNode, childNode) {
-      if (!currentNode) {
-        if (typeof childNode === 'string') {
-          currentNode = parser.parse(childNode).childNodes[0];
-        } else if ((typeof childNode === 'undefined' ? 'undefined' : _typeof(childNode)) === 'object') {
-          currentNode = childNode;
-        }
-      } else if (typeof childNode === 'string') {
-        currentNode.childNodes.push(parser.parse(childNode).childNodes[0]);
-      } else if ((typeof childNode === 'undefined' ? 'undefined' : _typeof(childNode)) === 'object') {
-        currentNode.childNodes.push(childNode);
-      }
-
-      return currentNode;
-    }, null);
-  }
-
-  return parser.parse(retVal.join('')).childNodes[0];
+  return parser.parse(retVal.join(''), supplemental).childNodes[0];
 }
 
 /**
@@ -1734,13 +1733,21 @@ function process(element, patches) {
                 }
                 // Change.
                 else {
-                    el.setAttribute(patch.name, patch.value);
+                    // Is an attribute.
+                    if (typeof patch.value === 'string') {
+                      el.setAttribute(patch.name, patch.value);
+                    }
+                    // Is a property.
+                    else {
+                        el[patch.name] = patch.value;
+                      }
 
                     // If an `is` attribute was set, we should upgrade it.
                     (0, _custom.upgrade)(patch.element.nodeName, el, patch.element);
 
                     // Support live updating of the value attribute.
-                    if (patch.name in el) {
+                    // Support live updating of the value attribute.
+                    if (patch.name === 'value' || patch.name === 'checked') {
                       el[patch.name] = patch.value;
                     }
                   }
@@ -2235,7 +2242,8 @@ function makeParser() {
     input: true,
     area: true,
     br: true,
-    hr: true
+    hr: true,
+    __DIFFHTML__: true
   };
 
   var kElementsClosedByOpening = {
@@ -2327,8 +2335,9 @@ function makeParser() {
    * @param {string} name     nodeName
    * @param {Object} keyAttrs id and class attribute
    * @param {Object} rawAttrs attributes in string
+   * @param {Object} supplemental data
    */
-  function HTMLElement(name, keyAttrs, rawAttrs) {
+  function HTMLElement(name, keyAttrs, rawAttrs, supplemental) {
     var instance = pools.elementObject.get();
 
     instance.nodeName = name;
@@ -2343,6 +2352,10 @@ function makeParser() {
 
         attr.name = match[1];
         attr.value = match[6] || match[5] || match[4] || match[1];
+
+        if (attr.value === '__DIFFHTML__') {
+          attr.value = supplemental.props.shift();
+        }
 
         // Look for empty attributes.
         if (match[6] === '""') {
@@ -2363,9 +2376,10 @@ function makeParser() {
     /**
      * Parse a chuck of HTML source.
      * @param  {string} data      html
+     * @param  {array} supplemental      data
      * @return {HTMLElement}      root element
      */
-    parse: function parse(data) {
+    parse: function parse(data, supplemental) {
       var rootObject = {};
       var root = HTMLElement(null, rootObject);
       var currentParent = root;
@@ -2374,7 +2388,6 @@ function makeParser() {
 
       if (data.indexOf('<') === -1 && data) {
         currentParent.childNodes.push(TextNode(data));
-
         return root;
       }
 
@@ -2384,7 +2397,11 @@ function makeParser() {
             // if has content
             text = data.slice(lastTextPos, kMarkupPattern.lastIndex - match[0].length);
 
-            currentParent.childNodes.push(TextNode(text));
+            if (text === '<__DIFFHTML__/>') {
+              currentParent.childNodes.push(supplemental.children.shift());
+            } else {
+              currentParent.childNodes.push(TextNode(text));
+            }
           }
         }
 
@@ -2410,7 +2427,7 @@ function makeParser() {
             }
           }
 
-          currentParent = currentParent.childNodes[currentParent.childNodes.push(HTMLElement(match[2], attrs, match[3])) - 1];
+          currentParent = currentParent.childNodes[currentParent.childNodes.push(HTMLElement(match[2], attrs, match[3], supplemental)) - 1];
 
           stack.push(currentParent);
 
