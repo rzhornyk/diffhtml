@@ -9,17 +9,26 @@ Status](https://coveralls.io/repos/tbranyen/diffhtml/badge.svg?branch=master&ser
 
 Stable version: 0.9.1
 
-Inspired by React and motivated by the Web, this is a library designed to help
-web developers write components for the web. By focusing on the markup
-representing how your application state should look, diffHTML will figure out
-how to modify the page with a minimal amount of operations. This tool is
-designed and optimized around HTML and standard features within JavaScript.
+Inspired by React and motivated by the Web, this library is designed to help
+web developers write components and applications for the web. By focusing on
+the markup representing how your state should look, diffHTML will figure out
+how to modify the page with a minimal amount of operations.
+
+
+
+Unlike JSX or HyperScript, HTML is the declarative markup format, but with a
+twist in that 
 
 ## Quick Jump
 
 - [Features](#features)
+  - [Browser support](#browser-support)
 - [Install](#install)
+  - [Module format locations](#module-format-locations)
 - [Quick start](#quick-start)
+  - [Writing a component]()
+  - [Composing an application]()
+  - [Build optimizations]()
 - [API](#API)
 
 ## Features
