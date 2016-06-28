@@ -17,10 +17,10 @@ how to modify the page with a minimal amount of operations.
 ## Quick Jump
 
 - [Features](#features)
-  - [Browser support](#browser-support)
+  - [File size](#file-size)
+  - [Browser compatibility](#browser-compatibility)
 - [How to install](#how-to-install)
   - [Module format locations](#module-format-locations)
-  - [Supporting legacy browsers](#supporting-legacy-browsers)
 - [Quick start](#quick-start)
   - [Writing a component](#writing-a-component)
   - [Composing an application](#composing-an-application)
@@ -28,7 +28,7 @@ how to modify the page with a minimal amount of operations.
 - [Documentation](#documentation)
   - [Lifecycle overview](#lifecycle-overview)
   - [Virtual Tree Abstraction](#virtual-tree-abstraction)
-  - [Writing Middleware](#writing-middleware)
+  - [Write & Consume Middleware](#middleware)
   - [Coming from React](#coming-from-react)
 - [API](#API)
   - **[html\`tagged template helper\`](#user-content-html)**
@@ -41,17 +41,17 @@ how to modify the page with a minimal amount of operations.
   - [addTransitionState(name, callback)](#user-content-add-a-transition-state-callback)
   - [removeTransitionState(name, callback)](#user-content-remove-a-transition-state-callback)
   - [use(middleware)](#use)
-- [Middleware](#user-content-middleware)
-  - [Logger](https://github.com/tbranyen/diffhtml-logger) <span style="color: #CCC;">*(Useful for debugging render transactions.)*</span>
-  - [HTML Components](https://github.com/tbranyen/diffhtml-components) <span style="color: #CCC;">*(Helps transition from React)*</span>
-  - [Inline Transition Hooks](https://github.com/tbranyen/diffhtml-inline-hooks) <span style="color: #CCC;">*(Bind transition hooks declaratively in your tagged templates.)*</span>
-  - [Web Worker](https://github.com/tbranyen/diffhtml-worker) <span style="color: #CCC;">*(Diffing is done on a worker thread instead.)*</span>
-  - [Hot Module Replacement](https://github.com/tbranyen/diffhtml-hmr)  <span style="color: #CCC;">*(Automatically reload HTML Components without a page reload with browserify and webpack.)*</span>
-  - [renderComplete Event](https://github.com/tbranyen/diffhtml-rendercomplete)  <span style="color: #CCC;">*(Triggers a renderComplete CustomEvent whenever diffHTML completes a render transaction on a DOM Node.)*</span>
-- [Tooling](#user-content-tooling)
-  - [Babel Tagged Template Optimizer](https://github.com/tbranyen/transform-tagged-diffhtml) <span style="color: #CCC;">*(Pre-compiles your tagged templates for better performance.)*</span>
-  - [Chrome DevTools](https://github.com/tbranyen/diffhtml-devtools) <span style="color: #CCC;">*(View render transactions, run benchmarks, and view old/new tree diffs.)*</span>
-- [Community]()
+- [Middleware](#middleware)
+  - [Logger](https://github.com/tbranyen/diffhtml-logger) <span style="color: #CCC;">| *Useful for debugging render transactions.*</span>
+  - [HTML Components](https://github.com/tbranyen/diffhtml-components) <span style="color: #CCC;">| *Helps transition from React*</span>
+  - [Inline Transition Hooks](https://github.com/tbranyen/diffhtml-inline-hooks) <span style="color: #CCC;">| *Bind transition hooks declaratively in your tagged templates.*</span>
+  - [Web Worker](https://github.com/tbranyen/diffhtml-worker) <span style="color: #CCC;">| *Diffing is done on a worker thread instead.*</span>
+  - [Hot Module Replacement](https://github.com/tbranyen/diffhtml-hmr)  <span style="color: #CCC;">| *Automatically reload HTML Components without a page reload with browserify and webpack.*</span>
+  - [renderComplete Event](https://github.com/tbranyen/diffhtml-rendercomplete)  <span style="color: #CCC;">| *Triggers a renderComplete Custom Event whenever diffHTML completes rendering.*</span>
+- [Tooling](#tooling)
+  - [Babel Tagged Template Optimizer](https://github.com/tbranyen/transform-tagged-diffhtml) <span style="color: #CCC;">| *Pre-compiles your tagged templates for better performance.*</span>
+  - [Chrome DevTools](https://github.com/tbranyen/diffhtml-devtools) <span style="color: #CCC;">| *View render transactions, run benchmarks, and view old/new tree diffs.*</span>
+- [Community](#community)
   - [Gitter](https://gitter.im/tbranyen/diffhtml)
   - [StackOverflow](https://gitter.im/tbranyen/diffhtml)
   - [Website](https://diffhtml.org)
@@ -71,7 +71,14 @@ how to modify the page with a minimal amount of operations.
 - Performance and memory management are core to this library. It is built with
   object recyling to keep memory constant and reduces garbage collection during
   tight loops.
-- Pretty darn tiny once compressed! **8.5kb** minified + GZip:
+
+#### File size
+
+[Back to quick jump...](#quick-jump)
+
+Pretty darn tiny once compressed at **9.9kb** minified + GZip. You can omit the
+parser by requiring `diffhtml/runtime` instead, bringing the size down to
+**8.5kb**!
 
   ``` shell
   # Full build  
@@ -85,7 +92,7 @@ how to modify the page with a minimal amount of operations.
   8.5K Jun 23 23:27 diffhtml-runtime.min.js.gz
   ```
 
-#### Browser support
+#### Browser compatibility
 
 [Back to quick jump...](#quick-jump)
 
@@ -114,6 +121,16 @@ resolved soon and chances are you will never see this message in the README.
       <td style="background-color: #CEE2DC;">✓
       <td style="background-color: #CEE2DC;">✓
 </table>
+
+##### Supporting legacy browsers
+
+diffHTML uses many modern browser features, such as
+[Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set),
+which are not available in [all
+browsers](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set#Browser_compatibility).
+
+If you wish to use diffHTML in older browsers, make sure you have the [Babel
+polyfill](https://babeljs.io/docs/usage/polyfill/) loaded first.
 
 ## How to install
 
@@ -170,20 +187,6 @@ This library is authored in vanilla ES2015 with no experimental syntax enabled, 
 | CJS                      | `diffhtml/dist/cjs/*`
 | ES6                      | `diffhtml/lib/*`
 
-#### Supporting legacy browsers
-
-[Back to quick jump...](#quick-jump)
-
-diffHTML is authored using many modern browser features, such as
-[Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set),
-which are not available in [all
-browsers](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set#Browser_compatibility).
-
-If you wish to use diffHTML in older browsers, make sure you have the Babel
-polyfill loaded first:
-
-https://babeljs.io/docs/usage/polyfill/
-
 ## Quick start
 
 [Back to quick jump](#quick-jump)
@@ -204,19 +207,29 @@ https://babeljs.io/docs/usage/polyfill/
 
 [Back to quick jump...](#quick-jump)
 
+
+
 ### Lifecycle overview
 
 [Back to quick jump...](#quick-jump)
 
-#### Creating a render transaction
+#### Virtual Tree Abstraction
 
 [Back to quick jump...](#quick-jump)
 
-#### Making the initial Virtual Tree from the input DOM Node
+#### Middleware
 
 [Back to quick jump...](#quick-jump)
 
-#### Associating metadata to the DOM Node
+##### Writing
+
+[Back to quick jump...](#quick-jump)
+
+##### Consuming
+
+[Back to quick jump...](#quick-jump)
+
+#### Coming from React
 
 [Back to quick jump...](#quick-jump)
 
@@ -584,5 +597,17 @@ newElement.innerHTML = '<div></div>';
 
 document.querySelector('main').diffRelease(newElement);
 ```
+
+## Middleware
+
+[Back to quick jump...](#quick-jump)
+
+## Tooling
+
+[Back to quick jump...](#quick-jump)
+
+## Community
+
+[Back to quick jump...](#quick-jump)
 
 [More information and a demo are available on http://www.diffhtml.org/](http://www.diffhtml.org/)
