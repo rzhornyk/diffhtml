@@ -38,6 +38,64 @@ describe('Integration: innerHTML', function() {
     });
   });
 
+  describe('Components', function() {
+    it('supports a component rendering a fragment', function() {
+      class MainComponent {
+        render() {
+          return html`
+            <div>hello</div>
+            <div>world</div>
+          `;
+        }
+      }
+
+      diff.innerHTML(this.fixture, diff.createElement(MainComponent));
+
+      assert.equal(this.fixture.innerHTML.trim(), `<div>hello</div>
+            <div>world</div>`);
+    });
+
+    it('can get the DOM Node from a top level component', function() {
+      let node = null;
+
+      class ComponentOne {
+        onClick() {
+          node = this.getDOMNode();
+        }
+
+        render() {
+          return html`<div onclick=${this.onClick.bind(this)} />`;
+        }
+      }
+
+      diff.innerHTML(this.fixture, html`<${ComponentOne} />`);
+
+      this.fixture.firstChild.click();
+
+      assert.equal(this.fixture.firstChild, node);
+    });
+
+    it('can get the DOM Node from a nested component', function() {
+      let node = null;
+
+      class ComponentOne {
+        onClick() {
+          node = this.getDOMNode();
+        }
+
+        render() {
+          return html`<div onclick=${this.onClick.bind(this)} />`;
+        }
+      }
+
+      diff.innerHTML(this.fixture, html`<div><${ComponentOne} /></div>`);
+
+      this.fixture.firstChild.firstChild.click();
+
+      assert.equal(this.fixture.firstChild.firstChild, node);
+    });
+  });
+
   describe('Text', function() {
     it('can decode HTML entities', function() {
       diff.innerHTML(this.fixture, '<div>&lt;</div>');

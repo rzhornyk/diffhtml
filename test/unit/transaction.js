@@ -1,7 +1,7 @@
 import { spy, stub } from 'sinon';
 import Transaction from '../../lib/transaction';
 
-describe.only('Unit: Transaction', function() {
+describe('Unit: Transaction', function() {
   beforeEach(() => {
     this.domNode = document.createElement('div');
     this.markup = `
@@ -14,6 +14,20 @@ describe.only('Unit: Transaction', function() {
     it('will return a transaction instance', () => {
       const { domNode, markup, options } = this;
       const transaction = new Transaction(domNode, markup, options);
+
+      assert.ok(transaction instanceof Transaction);
+    });
+  });
+
+  describe('renderNext', () => {
+    it('can render the next transaction in the queue', () => {
+      const { domNode, markup, options } = this;
+      const nextTransaction = { domNode, markup, options };
+      const transaction = Transaction.create(domNode, markup, options);
+
+      Object.assign(transaction.state, { nextTransaction });
+
+      transaction.start();
 
       assert.ok(transaction instanceof Transaction);
     });
@@ -39,7 +53,7 @@ describe.only('Unit: Transaction', function() {
       assert.equal(testFnTwo.calledOnce, true);
     });
 
-    it('can abort a flow when a function explictly returns `false`', () => {
+    it('will abort a flow when a function returns a value', () => {
       const testFn = spy();
       const testFnTwo = stub().returns(false);
       const testFnThree = spy();
@@ -58,10 +72,10 @@ describe.only('Unit: Transaction', function() {
       assert.throws(() => Transaction.flow(testFn, testFnTwo)());
     });
 
-    it('will pass return values as arguments', () => {
+    it('will pass initial value as arguments to all functions', () => {
       const valueOne = {};
       const valueTwo = {};
-      const testFn = stub().returns(valueOne);
+      const testFn = spy();
       const testFnTwo = spy();
 
       Transaction.flow(this, [testFn, testFnTwo])();
@@ -70,7 +84,7 @@ describe.only('Unit: Transaction', function() {
       assert.equal(testFn.calledWith(this), true);
 
       assert.equal(testFnTwo.calledOnce, true);
-      assert.equal(testFnTwo.calledWith(valueOne), true);
+      assert.equal(testFnTwo.calledWith(this), true);
     });
   });
 });

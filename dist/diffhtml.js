@@ -213,9 +213,15 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
  * @param nodeValue {String} - The nodeValue to set if a Text Node
  * @return {Object} - A DOM Node matching the nodeName
  */
-var createNodeFromName = function createNodeFromName(_ref) {
-  var nodeName = _ref.nodeName;
-  var nodeValue = _ref.nodeValue;
+var createNodeFromName = function createNodeFromName(vTree) {
+  var nodeName = vTree.nodeName;
+  var childNodes = vTree.childNodes;
+  var attributes = vTree.attributes;
+  var nodeValue = vTree.nodeValue;
+
+  // Shorthand the lookup method.
+
+  var lookupNode = _cache.NodeCache.get;
 
   // If we're dealing with a Text Node, we need to use the special DOM method,
   // since createElement does not understand the nodeName '#text'.
@@ -223,17 +229,70 @@ var createNodeFromName = function createNodeFromName(_ref) {
   if (nodeName === '#text') {
     return document.createTextNode(nodeValue);
   }
-  // If the nodeName matches any of the known SVG element names, mark it as
-  // SVG. The reason for doing this over detecting if nested in an <svg>
-  // element, is that we do not currently have circular dependencies in the
-  // VTree, by avoiding parentNode, so there is no way to crawl up the parents.
-  else if (svg.elements.indexOf(nodeName) > -1) {
-      return document.createElementNS(svg.namespace, nodeName);
+  // Support dynamically creating document fragments.
+  else if (nodeName === '#document-fragment') {
+      return document.createDocumentFragment();
     }
-    // If not a Text or SVG Node, then create with the standard method.
-    else {
-        return document.createElement(nodeName);
+    // If the nodeName matches any of the known SVG element names, mark it as
+    // SVG. The reason for doing this over detecting if nested in an <svg>
+    // element, is that we do not currently have circular dependencies in the
+    // VTree, by avoiding parentNode, so there is no way to crawl up the parents.
+    else if (svg.elements.indexOf(nodeName) > -1) {
+        return document.createElementNS(svg.namespace, nodeName);
       }
+      // Render the stateful component.
+      else if (typeof nodeName === 'function') {
+          var _ret = function () {
+            // Props are an immutable object inspired by React. They always contain
+            // a childNodes
+            var props = Object.freeze(Object.assign({}, attributes, {
+              children: childNodes.map(lookupNode)
+            }));
+
+            // Make the stateful component.
+            var instance = new nodeName(props);
+
+            // Initial render.
+            var node = instance.render();
+
+            // Return a single Node or multiple nodes depending on the return value.
+            instance.getDOMNode = function () {
+              return Array.isArray(node) ? node.map(lookupNode) : lookupNode(node);
+            };
+
+            return {
+              v: { domNode: createNodeFromName(node), vTree: node }
+            };
+          }();
+
+          if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+        } else if ((typeof nodeName === 'undefined' ? 'undefined' : _typeof(nodeName)) === 'object') {
+          var _ret2 = function () {
+            // Props are an immutable object inspired by React. They always contain
+            // a childNodes
+            var props = Object.freeze(Object.assign({}, attributes, {
+              children: childNodes.map(lookupNode)
+            }));
+
+            // Initial render.
+            var node = nodeName.render(props);
+
+            // Return a single Node or multiple nodes depending on the return value.
+            nodeName.getDOMNode = function () {
+              return Array.isArray(node) ? node.map(lookupNode) : lookupNode(node);
+            };
+
+            return {
+              v: { domNode: createNodeFromName(node), vTree: node }
+            };
+          }();
+
+          if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+        }
+        // If not a Text or SVG Node, then create with the standard method.
+        else {
+            return document.createElement(nodeName);
+          }
 };
 
 /**
@@ -1125,7 +1184,10 @@ function reconileTrees(transaction) {
   // We rebuild the tree whenever the DOM Node changes, including the first
   // time we patch a DOM Node.
   if (!sameInnerHTML || !sameOuterHTML || !sameTextContent) {
-    oldTree && (0, _memory.unprotectElement)(oldTree);
+    if (oldTree) {
+      (0, _memory.unprotectElement)(oldTree);
+    }
+
     state.oldTree = (0, _memory.protectElement)((0, _make2.default)(domNode));
   }
 
@@ -1135,10 +1197,15 @@ function reconileTrees(transaction) {
   // in the case of setting innerHTML.
   state.newTree = getTreeFromNewHTML(markup, options, function (newTree) {
     if (inner) {
-      _pools.pools.elementObject.unprotect(newTree);
+      // TODO This was removed for some reason...
+      //pools.elementObject.unprotect(newTree);
 
       var nodeName = state.oldTree.nodeName;
       var attributes = state.oldTree.attributes;
+
+      if (typeof newTree.nodeName === 'function') {
+        return (0, _helpers.createElement)(nodeName, attributes, newTree);
+      }
 
       return (0, _helpers.createElement)(nodeName, attributes, newTree);
     }
@@ -1322,7 +1389,13 @@ function sync(transaction) {
   var oldTree = _transaction$state.oldTree;
   var newTree = _transaction$state.newTree;
 
+  performance.mark('sync');
+
   transaction.patches = (0, _sync2.default)(oldTree, newTree);
+
+  performance.mark('sync end');
+  performance.measure('diffHTML render sync', 'sync', 'sync end');
+
   return transaction;
 }
 
@@ -1613,7 +1686,12 @@ function makeNode(node) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.CHANGE_TEXT = exports.MODIFY_ATTRIBUTE = exports.MODIFY_ELEMENT = exports.REPLACE_ENTIRE_ELEMENT = exports.REMOVE_ENTIRE_ELEMENT = exports.REMOVE_ELEMENT_CHILDREN = undefined;
 exports.default = sync;
+
+var _cache = _dereq_('../util/cache');
+
+var _helpers = _dereq_('../tree/helpers');
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -1627,6 +1705,25 @@ var REPLACE_ENTIRE_ELEMENT = exports.REPLACE_ENTIRE_ELEMENT = 0;
 var MODIFY_ELEMENT = exports.MODIFY_ELEMENT = 1;
 var MODIFY_ATTRIBUTE = exports.MODIFY_ATTRIBUTE = 2;
 var CHANGE_TEXT = exports.CHANGE_TEXT = 3;
+
+var runCtor = function runCtor(vTree, oldMount) {
+  var props = Object.freeze(Object.assign({}, vTree.attributes, {
+    children: Object.freeze(vTree.childNodes)
+  }));
+
+  var instance = new vTree.nodeName(props);
+
+  // Initial render.
+  var newMount = instance.render();
+
+  // Return a single Node or multiple nodes depending on the return value.
+  instance.getDOMNode = function () {
+    var node = oldMount || newMount;
+    return Array.isArray(node) ? node.map(_cache.NodeCache.get) : _cache.NodeCache.get(node);
+  };
+
+  return Array.isArray(newMount) ? (0, _helpers.createElement)('#document-fragment', null, newMount) : newMount;
+};
 
 /**
  * Synchronizes changes from the newTree into the oldTree.
@@ -1644,6 +1741,24 @@ function sync(oldTree, newTree, patches) {
 
   if (!oldTree) {
     throw new Error('Missing existing tree to sync');
+  }
+
+  var oldIsCtor = oldTree && typeof oldTree.nodeName === 'function';
+  var newIsCtor = newTree && typeof newTree.nodeName === 'function';
+
+  if (oldIsCtor || newIsCtor) {
+    if (oldTree && newTree && oldTree.nodeName === newTree.nodeName) {
+      return patches;
+    }
+
+    if (oldIsCtor) {
+      oldTree = runCtor(oldTree);
+    }
+
+    if (newIsCtor) {
+      newTree = runCtor(newTree, oldTree);
+      _cache.NodeCache.set(newTree, _cache.NodeCache.get(oldTree));
+    }
   }
 
   var oldNodeValue = oldTree.nodeValue;
@@ -1830,6 +1945,10 @@ function sync(oldTree, newTree, patches) {
   // Replace elements if they are different.
   if (oldChildNodesLength >= childNodesLength) {
     for (var _i = 0; _i < childNodesLength; _i++) {
+      if (typeof childNodes[_i].nodeName === 'function') {
+        childNodes[_i] = runCtor(childNodes[_i], oldChildNodes[_i]);
+      }
+
       if (oldChildNodes[_i].nodeName !== childNodes[_i].nodeName) {
         // Add to the patches.
         patches.push({
@@ -1917,7 +2036,7 @@ function sync(oldTree, newTree, patches) {
   return patches;
 }
 
-},{}],17:[function(_dereq_,module,exports){
+},{"../tree/helpers":14,"../util/cache":17}],17:[function(_dereq_,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2097,7 +2216,7 @@ var _escape2 = _interopRequireDefault(_escape);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// Code based off of:
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; } // Code based off of:
 // https://github.com/ashi009/node-fast-html-parser
 
 var TOKEN = '__DIFFHTML__';
@@ -2105,7 +2224,7 @@ var TOKEN = '__DIFFHTML__';
 var hasNonWhitespaceEx = /\S/;
 var doctypeEx = /<!.*>/ig;
 var attrEx = /\b([_a-z][_a-z0-9\-]*)\s*(=\s*("([^"]+)"|'([^']+)'|(\S+)))?/ig;
-var tagEx = /<!--[^]*?(?=-->)-->|<(\/?)([a-z\-][a-z0-9\-]*)\s*([^>]*?)(\/?)>/ig;
+var tagEx = /<!--[^]*?(?=-->)-->|<(\/?)([a-z\-\_][a-z0-9\-\_]*)\s*([^>]*?)(\/?)>/ig;
 var spaceEx = /[^ ]/;
 
 // We use this Set in the node/patch module so marking it exported.
@@ -2156,7 +2275,8 @@ var interpolateDynamicBits = function interpolateDynamicBits(currentParent, stri
           return;
         }
 
-        // If we are in the second iteration, this
+        // If we are in the second iteration, this means the whitespace has been
+        // trimmed and we can pull out dynamic interpolated values.
         var dynamicBit = supplemental.children.shift();
 
         if (typeof dynamicBit === 'string') {
@@ -2183,6 +2303,39 @@ var interpolateDynamicBits = function interpolateDynamicBits(currentParent, stri
 };
 
 /**
+ * Creates a flat, immutable, and sealed object for component properties. This
+ * is similar, but different from the attributes array. The attributes array
+ * uses protected memory objects, while this is a single object that will be
+ * garbage collected.
+ *
+ * @return {Object} containing properties
+ */
+var makePropsObject = function makePropsObject(rawAttrs) {
+  var props = {};
+
+  for (var match; match = attrEx.exec(rawAttrs || '');) {
+    var name = match[1];
+    var value = match[6] || match[5] || match[4] || match[1];
+    var attr = _defineProperty({}, name, value);
+
+    // If the value is dynamic, apply the value.
+    if (attr.value === TOKEN) {
+      attr.value = supplemental.props.shift();
+    }
+
+    // Look for empty attributes.
+    if (match[6] === '""') {
+      attr.value = '';
+    }
+
+    // Merge into the props object.
+    Object.assign(props, attr);
+  }
+
+  return props;
+};
+
+/**
  * TextNode to contain a text element in DOM tree.
  *
  * @param {String} nodeValue - A value to set in the text,, set unescaped
@@ -2206,6 +2359,11 @@ var TextNode = function TextNode(value) {
  * @return {Object} vTree
  */
 var HTMLElement = function HTMLElement(nodeName, rawAttrs, supplemental) {
+  // Support dynamic tag names.
+  if (nodeName === TOKEN) {
+    return (0, _helpers.createElement)(supplemental.tags.shift(), makePropsObject(rawAttrs));
+  }
+
   var vTree = (0, _helpers.createElement)(nodeName, [], []);
 
   for (var match; match = attrEx.exec(rawAttrs || '');) {
@@ -2337,6 +2495,18 @@ function parse(html, supplemental) {
 
       // </ or /> or <br> etc.
       while (currentParent) {
+        // This is a dynmic tag name.
+        if (match[2] === TOKEN) {
+          var value = supplemental.tags.shift();
+
+          if (currentParent.nodeName === value) {
+            stack.pop();
+            currentParent = stack[stack.length - 1];
+
+            break;
+          }
+        }
+
         if (currentParent.rawNodeName == match[2]) {
           stack.pop();
           currentParent = stack[stack.length - 1];

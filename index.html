@@ -5,17 +5,92 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
   <title>Index</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.2.1/material.indigo-pink.min.css">
+  <script async src="https://code.getmdl.io/1.2.1/material.min.js"></script>
+  <script async src="dist/diffhtml.js"></script>
 </head>
 <body>
   <main id="main"></main>
-  <script src="dist/diffhtml.js"></script>
 
   <script>
-    const App = () => diff.html`
-      hello world
+    const { html, innerHTML } = diff;
+
+    const Header = () => html`
+      <header class="mdl-layout__header">
+        <div class="mdl-layout__header-row">
+          <!-- Title -->
+          <span class="mdl-layout-title">diffHTML Hub</span>
+          <!-- Add spacer, to align navigation to the right -->
+          <div class="mdl-layout-spacer"></div>
+          <!-- Navigation. We hide it in small screens. -->
+          <nav class="mdl-navigation mdl-layout--large-screen-only">
+            <a class="mdl-navigation__link" href="">GitHub</a>
+            <a class="mdl-navigation__link" href="">Twitter</a>
+            <a class="mdl-navigation__link" href="">Reddit</a>
+          </nav>
+        </div>
+
+        <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
+          <a href="#scroll-tab-1" class="mdl-layout__tab is-active">Getting started</a>
+          <a href="#scroll-tab-2" class="mdl-layout__tab">Learn the Source</a>
+        </div>
+      </header>
+
+      <div class="mdl-layout__drawer">
+        <span class="mdl-layout-title">Demo Applications</span>
+        <nav class="mdl-navigation">
+          <a class="mdl-navigation__link" href="">Game #1</a>
+          <a class="mdl-navigation__link" href="">Utility app #2</a>
+          <a class="mdl-navigation__link" href="">Demo thing #3</a>
+          <a class="mdl-navigation__link" href="">More fun #4</a>
+        </nav>
+      </div>
     `;
 
-    diff.innerHTML(main, App());
+    const App = () => html`
+      <!-- Always shows a header, even in smaller screens. -->
+      <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+        ${Header()}
+
+        <main class="mdl-layout__content">
+          <section class="mdl-layout__tab-panel is-active" id="scroll-tab-1">
+            <div class="page-content">
+              How to get started? 
+            </div>
+          </section>
+
+          <section class="mdl-layout__tab-panel" id="scroll-tab-2">
+            <div class="page-content">
+              Durrrr 
+            </div>
+          </section>
+
+          <div class="page-content">
+            ${Card()} 
+          </div>
+        </main>
+      </div>
+    `;
+
+    const Card = () => html`
+      <!-- Wide card with share menu button -->
+      <style>
+      .demo-card-wide.mdl-card {
+        width: 512px;
+      }
+      .demo-card-wide > .mdl-card__title {
+        color: #fff;
+        height: 176px;
+        background: url('../assets/demos/welcome_card.jpg') center / cover;
+      }
+      .demo-card-wide > .mdl-card__menu {
+        color: #fff;
+      }
+      </style>
+    `;
+
+    innerHTML(main, App());
   </script>
 </body>
 </html>

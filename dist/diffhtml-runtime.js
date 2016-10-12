@@ -144,7 +144,94 @@ function innerHTML(element) {
 function element(element, newElement) {
   var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
+<<<<<<< HEAD
   return _transaction2.default.create(element, newElement, options).start();
+=======
+  (0, _transaction2.default)(element, newElement, options);
+}
+
+/**
+ * Adds a global transition listener. With many elements this could be an
+ * expensive operation, so try to limit the amount of listeners added if you're
+ * concerned about performance.
+ *
+ * Since the callback triggers with various elements, most of which you
+ * probably don't care about, you'll want to filter. A good way of filtering
+ * is to use the DOM `matches` method. It's fairly well supported
+ * (http://caniuse.com/#feat=matchesselector) and may suit many projects. If
+ * you need backwards compatibility, consider using jQuery's `is`.
+ *
+ * @example
+ *
+ *    import { addTransitionState } from 'diffhtml'
+ *
+ *    // Fade in all elements as they are added to the DOM.
+ *    addTransitionState('attached', el => $(el).fadeIn().promise())
+ *
+ *    // Fade out all elements as they leave the DOM.
+ *    addTransitionState('detached', el => $(el).fadeOut().promise())
+ *
+ *
+ * @param state - String name that matches what's available in the
+ * documentation above.
+ * @param callback - Function to receive the matching elements.
+ */
+function addTransitionState(state, callback) {
+  if (!state) {
+    throw new Error('Missing transition state name');
+  }
+
+  if (!callback) {
+    throw new Error('Missing transition state callback');
+  }
+
+  // Not a valid state name.
+  if (Object.keys(_transitions.states).indexOf(state) === -1) {
+    throw new Error('Invalid state name: ' + state);
+  }
+
+  _transitions.states[state].push(callback);
+}
+
+/**
+ * Removes a global transition listener.
+ *
+ * When invoked with no arguments, this method will remove all transition
+ * callbacks. When invoked with the name argument it will remove all transition
+ * state callbacks matching the name, and so on for the callback.
+ *
+ * @example
+ *
+ *    import { removeTransitionState } from 'diffhtml'
+ *
+ *    // Remove all transition state handlers.
+ *    removeTransitionState()
+ *
+ *    // Remove all `attached` state handlers.
+ *    removeTransitionState('attached')
+ *
+ *
+ * @param {String =} state - Name that matches what's available in the
+ * documentation above
+ * @param {Function =} callback - Callback to receive the matching elements
+ */
+function removeTransitionState(state, callback) {
+  if (!callback && state) {
+    _transitions.states[state].length = 0;
+  } else if (state && callback) {
+    // Not a valid state name.
+    if (Object.keys(_transitions.states).indexOf(state) === -1) {
+      throw new Error('Invalid state name ' + state);
+    }
+
+    var index = _transitions.states[state].indexOf(callback);
+    _transitions.states[state].splice(index, 1);
+  } else {
+    for (var _state in _transitions.states) {
+      _transitions.states[_state].length = 0;
+    }
+  }
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
 }
 
 /**
@@ -222,17 +309,77 @@ var createNodeFromName = function createNodeFromName(_ref) {
   if (nodeName === '#text') {
     return document.createTextNode(nodeValue);
   }
-  // If the nodeName matches any of the known SVG element names, mark it as
-  // SVG. The reason for doing this over detecting if nested in an <svg>
-  // element, is that we do not currently have circular dependencies in the
-  // VTree, by avoiding parentNode, so there is no way to crawl up the parents.
-  else if (svg.elements.indexOf(nodeName) > -1) {
-      return document.createElementNS(svg.namespace, nodeName);
+  // Support dynamically creating document fragments.
+  else if (nodeName === '#document-fragment') {
+      return document.createDocumentFragment();
     }
+<<<<<<< HEAD
     // If not a Text or SVG Node, then create with the standard method.
     else {
         return document.createElement(nodeName);
       }
+=======
+    // If the nodeName matches any of the known SVG element names, mark it as
+    // SVG. The reason for doing this over detecting if nested in an <svg>
+    // element, is that we do not currently have circular dependencies in the
+    // VTree, by avoiding parentNode, so there is no way to crawl up the parents.
+    else if (svg.elements.indexOf(nodeName) > -1) {
+        return document.createElementNS(svg.namespace, nodeName);
+      }
+      // Render the stateful component.
+      else if (typeof nodeName === 'function') {
+          var _ret = function () {
+            // Props are an immutable object inspired by React. They always contain
+            // a childNodes
+            var props = Object.freeze(Object.assign({}, attributes, {
+              children: childNodes.map(lookupNode)
+            }));
+
+            // Make the stateful component.
+            var instance = new nodeName(props);
+
+            // Initial render.
+            var node = instance.render();
+
+            // Return a single Node or multiple nodes depending on the return value.
+            instance.getDOMNode = function () {
+              return Array.isArray(node) ? node.map(lookupNode) : lookupNode(node);
+            };
+
+            return {
+              v: { domNode: createNodeFromName(node), vTree: node }
+            };
+          }();
+
+          if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+        } else if ((typeof nodeName === 'undefined' ? 'undefined' : _typeof(nodeName)) === 'object') {
+          var _ret2 = function () {
+            // Props are an immutable object inspired by React. They always contain
+            // a childNodes
+            var props = Object.freeze(Object.assign({}, attributes, {
+              children: childNodes.map(lookupNode)
+            }));
+
+            // Initial render.
+            var node = nodeName.render(props);
+
+            // Return a single Node or multiple nodes depending on the return value.
+            nodeName.getDOMNode = function () {
+              return Array.isArray(node) ? node.map(lookupNode) : lookupNode(node);
+            };
+
+            return {
+              v: { domNode: createNodeFromName(node), vTree: node }
+            };
+          }();
+
+          if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+        }
+        // If not a Text or SVG Node, then create with the standard method.
+        else {
+            return document.createElement(nodeName);
+          }
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
 };
 
 /**
@@ -1203,6 +1350,36 @@ function start(transaction) {
     }
   });
 
+<<<<<<< HEAD
+=======
+  // Alias the `oldTree` off of state for parity.
+  var oldTree = state.oldTree;
+
+  // We need to ensure that our target to diff is a Virtual Tree Element. This
+  // function takes in whatever `newHTML` is and normalizes to a tree object.
+  // The callback function runs on every normalized Node to wrap childNodes
+  // in the case of setting innerHTML.
+  var newTree = getTreeFromNewHTML(newHTML, options, function (newTree) {
+    if (isInner) {
+      var nodeName = state.oldTree.nodeName;
+      var attributes = state.oldTree.attributes;
+
+      if (typeof newTree.nodeName === 'function') {
+        return (0, _helpers.createElement)(nodeName, attributes, newTree);
+      }
+
+      return (0, _helpers.createElement)(nodeName, attributes, newTree);
+    }
+
+    return Array.isArray(newTree) ? newTree[0] : newTree;
+  });
+
+  // Trigger any middleware with the DOM Node, old Virtual Tree Element, and
+  // new Virtual Tree Element. This allows the middleware to mutate and inspect
+  // the trees before they get consumed by diffHTML.
+  var prePatchMiddlewares = [];
+
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
   // By exposing the internal tree synchronization and DOM Node patch methods,
   // a middleware could implement sync/patch on a separate thread.
   var transactionMethods = {
@@ -1394,12 +1571,23 @@ var normalizeChildNodes = function normalizeChildNodes(_childNodes) {
  * @param childNodes
  * @return {Object} element
  */
+<<<<<<< HEAD
 function createElement(nodeName, attributes, childNodes) {
+=======
+function createElement(nodeName, attributes) {
+  for (var _len = arguments.length, childNodes = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+    childNodes[_key - 2] = arguments[_key];
+  }
+
+  attributes = attributes || [];
+
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
   if (nodeName === '') {
     return normalizeChildNodes(childNodes);
   }
 
   if (typeof nodeName === 'function') {
+<<<<<<< HEAD
     var props = attributes;
     props.children = childNodes;
     return new nodeName(props).render(props);
@@ -1409,6 +1597,28 @@ function createElement(nodeName, attributes, childNodes) {
     return nodeName.render(_props);
   }
 
+=======
+    return {
+      attributes: Object.assign({}, attributes),
+      childNodes: childNodes,
+      nodeName: nodeName
+    };
+  }
+
+  // A stateless component is a singleton object that is a singular state.
+  // This object must contain a `render` function. This function should return
+  // a VTree representing the component. It is passed a `props` object
+  // containing the attributes converted to a flat object. A special property
+  // `children` is also attached to allow for nesting the passed children.
+  else if ((typeof nodeName === 'undefined' ? 'undefined' : _typeof(nodeName)) === 'object') {
+      var props = Object.freeze(Object.assign({}, attributes, {
+        children: childNodes
+      }));
+
+      return nodeName.render(props);
+    }
+
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
   var entry = _pools.pools.elementObject.get();
   var isTextNode = nodeName === 'text' || nodeName === '#text';
 
@@ -1546,7 +1756,12 @@ function makeNode(node) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.CHANGE_TEXT = exports.MODIFY_ATTRIBUTE = exports.MODIFY_ELEMENT = exports.REPLACE_ENTIRE_ELEMENT = exports.REMOVE_ENTIRE_ELEMENT = exports.REMOVE_ELEMENT_CHILDREN = undefined;
 exports.default = sync;
+
+var _cache = _dereq_('../util/cache');
+
+var _helpers = _dereq_('../tree/helpers');
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -1560,6 +1775,25 @@ var REPLACE_ENTIRE_ELEMENT = exports.REPLACE_ENTIRE_ELEMENT = 0;
 var MODIFY_ELEMENT = exports.MODIFY_ELEMENT = 1;
 var MODIFY_ATTRIBUTE = exports.MODIFY_ATTRIBUTE = 2;
 var CHANGE_TEXT = exports.CHANGE_TEXT = 3;
+
+var runCtor = function runCtor(vTree, oldMount) {
+  var props = Object.freeze(Object.assign({}, vTree.attributes, {
+    children: Object.freeze(vTree.childNodes)
+  }));
+
+  var instance = new vTree.nodeName(props);
+
+  // Initial render.
+  var newMount = instance.render();
+
+  // Return a single Node or multiple nodes depending on the return value.
+  instance.getDOMNode = function () {
+    var node = oldMount || newMount;
+    return Array.isArray(node) ? node.map(_cache.NodeCache.get) : _cache.NodeCache.get(node);
+  };
+
+  return Array.isArray(newMount) ? (0, _helpers.createElement)('#document-fragment', null, newMount) : newMount;
+};
 
 /**
  * Synchronizes changes from the newTree into the oldTree.
@@ -1579,6 +1813,27 @@ function sync(oldTree, newTree, patches) {
     throw new Error('Missing existing tree to sync');
   }
 
+<<<<<<< HEAD
+=======
+  var oldIsCtor = oldTree && typeof oldTree.nodeName === 'function';
+  var newIsCtor = newTree && typeof newTree.nodeName === 'function';
+
+  if (oldIsCtor || newIsCtor) {
+    if (oldTree && newTree && oldTree.nodeName === newTree.nodeName) {
+      return patches;
+    }
+
+    if (oldIsCtor) {
+      oldTree = runCtor(oldTree);
+    }
+
+    if (newIsCtor) {
+      newTree = runCtor(newTree, oldTree);
+      _cache.NodeCache.set(newTree, _cache.NodeCache.get(oldTree));
+    }
+  }
+
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
   var oldNodeValue = oldTree.nodeValue;
   var oldChildNodes = oldTree.childNodes;
   var oldIsTextNode = oldTree.nodeName === '#text';
@@ -1664,6 +1919,10 @@ function sync(oldTree, newTree, patches) {
     var fragment = [];
 
     for (var i = oldChildNodesLength; i < childNodesLength; i++) {
+      if (typeof childNodes[i].nodeName === 'function') {
+        childNodes[i] = runCtor(childNodes[i]);
+      }
+
       // Internally add to the tree.
       oldChildNodes.push(childNodes[i]);
 
@@ -1763,6 +2022,10 @@ function sync(oldTree, newTree, patches) {
   // Replace elements if they are different.
   if (oldChildNodesLength >= childNodesLength) {
     for (var _i = 0; _i < childNodesLength; _i++) {
+      if (typeof childNodes[_i].nodeName === 'function') {
+        childNodes[_i] = runCtor(childNodes[_i], oldChildNodes[_i]);
+      }
+
       if (oldChildNodes[_i].nodeName !== childNodes[_i].nodeName) {
         // Add to the patches.
         patches.push({
@@ -1850,7 +2113,11 @@ function sync(oldTree, newTree, patches) {
   return patches;
 }
 
+<<<<<<< HEAD
 },{}],17:[function(_dereq_,module,exports){
+=======
+},{"../tree/helpers":7,"../util/cache":10}],10:[function(_dereq_,module,exports){
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2122,6 +2389,10 @@ var _escape2 = _interopRequireDefault(_escape);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var isPropEx = /(=|"|')[\w\s]?$/;
+<<<<<<< HEAD
+=======
+var isTagEx = /(<|\/)/;
+>>>>>>> 40ef99f... Adds tests and fixes for getDOMNode
 var TOKEN = '__DIFFHTML__';
 
 /**
@@ -2170,10 +2441,11 @@ function html(strings) {
   var retVal = '';
 
   // We filter the supplemental values by where they are used. Values are
-  // either props or children.
+  // either props, children, or tags (for components).
   var supplemental = {
     props: [],
-    children: []
+    children: [],
+    tags: []
   };
 
   // Loop over the static strings, each break correlates to an interpolated
@@ -2186,13 +2458,18 @@ function html(strings) {
     retVal += string;
 
     if (values.length) {
-      var nextString = strings[i + 1];
       var value = nextValue(values);
+      var lastSegment = string.split(' ').pop();
+      var lastCharacter = lastSegment.trim().slice(-1);
       var isProp = Boolean(retVal.match(isPropEx));
+      var isTag = Boolean(lastCharacter.match(isTagEx));
 
       if (isProp && ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' || typeof value === 'function')) {
         supplemental.props.push(value);
         retVal += TOKEN;
+      } else if (isTag && typeof value === 'function') {
+        supplemental.tags.push(value);
+        retVal.push(TOKEN);
       } else if (Array.isArray(value) || (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object') {
         supplemental.children.push(value);
         retVal += TOKEN;
