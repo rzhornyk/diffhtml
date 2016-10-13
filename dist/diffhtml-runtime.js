@@ -1661,8 +1661,6 @@ function sync(oldTree, newTree, patches) {
       value: newTree.nodeValue
     });
 
-    oldTree.nodeValue = newTree.nodeValue;
-
     return patches;
   }
 
@@ -1793,11 +1791,11 @@ function sync(oldTree, newTree, patches) {
   // Replace elements if they are different.
   if (oldChildNodesLength >= childNodesLength) {
     for (var _i = 0; _i < childNodesLength; _i++) {
-      if (typeof childNodes[_i].nodeName === 'function') {
-        childNodes[_i] = runCtor(childNodes[_i], oldChildNodes[_i]);
-      }
-
       if (oldChildNodes[_i].nodeName !== childNodes[_i].nodeName) {
+        if (_cache.NodeCache.get(oldChildNodes[_i])) {
+          continue;
+        }
+
         // Add to the patches.
         patches.push({
           __do__: MODIFY_ELEMENT,

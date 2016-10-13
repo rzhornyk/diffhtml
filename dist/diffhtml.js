@@ -437,6 +437,8 @@ var createNodeFromName = function createNodeFromName(vTree) {
               return Array.isArray(node) ? node.map(lookupNode) : lookupNode(node);
             };
 
+            _cache.ComponentCache.set(node, instance);
+
             return {
               v: { domNode: createNodeFromName(node), vTree: node }
             };
@@ -1560,6 +1562,8 @@ var runCtor = function runCtor(vTree, oldMount) {
   // Initial render.
   var newMount = instance.render();
 
+  _cache.ComponentCache.set(newMount, instance);
+
   // Return a single Node or multiple nodes depending on the return value.
   instance.getDOMNode = function () {
     var node = oldMount || newMount;
@@ -1660,8 +1664,6 @@ function sync(oldTree, newTree, patches) {
       element: oldTree,
       value: newTree.nodeValue
     });
-
-    oldTree.nodeValue = newTree.nodeValue;
 
     return patches;
   }
@@ -1793,11 +1795,23 @@ function sync(oldTree, newTree, patches) {
   // Replace elements if they are different.
   if (oldChildNodesLength >= childNodesLength) {
     for (var _i = 0; _i < childNodesLength; _i++) {
-      if (typeof childNodes[_i].nodeName === 'function') {
-        childNodes[_i] = runCtor(childNodes[_i], oldChildNodes[_i]);
-      }
-
       if (oldChildNodes[_i].nodeName !== childNodes[_i].nodeName) {
+        if (_cache.NodeCache.get(oldChildNodes[_i])) {
+          var instance = _cache.ComponentCache.get(oldChildNodes[_i]);
+
+          if (instance) {
+            var vTree = childNodes[_i];
+            var props = Object.freeze(Object.assign({}, vTree.attributes, {
+              children: Object.freeze(vTree.childNodes)
+            }));
+
+            instance.props = props;
+            instance.render();
+          }
+
+          continue;
+        }
+
         // Add to the patches.
         patches.push({
           __do__: MODIFY_ELEMENT,
@@ -1898,6 +1912,9 @@ var NodeCache = exports.NodeCache = new Map();
 
 // Caches all middleware. You cannot unset a middleware once it has been added.
 var MiddlewareCache = exports.MiddlewareCache = new Set();
+
+// Caches all component instances for a given vTree.
+var ComponentCache = exports.ComponentCache = new Map();
 
 },{}],11:[function(_dereq_,module,exports){
 (function (global){
@@ -2158,7 +2175,7 @@ var interpolateDynamicBits = function interpolateDynamicBits(currentParent, stri
  *
  * @return {Object} containing properties
  */
-var makePropsObject = function makePropsObject(rawAttrs) {
+var makePropsObject = function makePropsObject(rawAttrs, supplemental) {
   var props = {};
 
   for (var match; match = attrEx.exec(rawAttrs || '');) {
@@ -2167,13 +2184,13 @@ var makePropsObject = function makePropsObject(rawAttrs) {
     var attr = _defineProperty({}, name, value);
 
     // If the value is dynamic, apply the value.
-    if (attr.value === TOKEN) {
-      attr.value = supplemental.props.shift();
+    if (attr[name] === TOKEN) {
+      attr[name] = supplemental.props.shift();
     }
 
     // Look for empty attributes.
     if (match[6] === '""') {
-      attr.value = '';
+      attr[name] = '';
     }
 
     // Merge into the props object.
@@ -2209,7 +2226,8 @@ var TextNode = function TextNode(value) {
 var HTMLElement = function HTMLElement(nodeName, rawAttrs, supplemental) {
   // Support dynamic tag names.
   if (nodeName === TOKEN) {
-    return (0, _helpers.createElement)(supplemental.tags.shift(), makePropsObject(rawAttrs));
+    var props = makePropsObject(rawAttrs, supplemental);
+    return (0, _helpers.createElement)(supplemental.tags.shift(), props);
   }
 
   var vTree = (0, _helpers.createElement)(nodeName, [], []);
