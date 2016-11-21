@@ -7,24 +7,15 @@
   <title>Index</title>
 </head>
 <body>
+  <main id="main"></main>
   <script src="dist/diffhtml.js"></script>
-  <script src="dist/diffhtml-logger.js"></script>
+
   <script>
-    diff.use(logger);
+    const App = () => diff.html`
+      hello world
+    `;
 
-    diff.addTransitionState('attached', () => {
-      return new Promise(resolve => {
-        setTimeout(resolve, 2000);
-      });
-    });
-
-    diff.outerHTML(document.body, `
-      <body>
-        <div>
-        Hello world
-        </div>
-      </body>
-    `);
+    diff.innerHTML(main, App());
   </script>
 </body>
 </html>
