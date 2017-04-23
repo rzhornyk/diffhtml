@@ -7264,7 +7264,7 @@ exports.default = function (_ref) {
   // If dynamic bits are interpolated between strings, this will concatenate
   // them together.
   var makeConcatExpr = function makeConcatExpr(value, supplemental) {
-    return value.split(symbol).reduce(function (memo, str, i, parts) {
+    return value.split(TOKEN).reduce(function (memo, str, i, parts) {
       // Last part should be string terminator
       if (i === parts.length - 1 && memo) {
         memo = t.binaryExpression('+', memo, t.stringLiteral(str));
@@ -7284,17 +7284,18 @@ exports.default = function (_ref) {
     }, null);
   };
 
-  var splitDyanmicValues = function splitDyanmicValues(value, supplemental) {
-    var expressions = value.split(symbol).reduce(function (memo, str, i, arr) {
-      var isEmpty = !Boolean(str);
+  // Takes in a string and determines if any part needs splitting.
+  var interpolateValues = function interpolateValues(value, supplemental) {
+    var expressions = value.split(tokenEx).reduce(function (memo, token, i, arr) {
+      var isEmpty = !Boolean(token);
 
-      if (!isEmpty) {
-        memo.push(t.stringLiteral(str));
-      }
-
-      // If not the last one.
-      if (i !== arr.length - 1) {
-        memo.push(supplemental.shift());
+      // When we split on the token expression, the capture group will replace
+      // the token's position. So all we do is ensure that we're on an odd
+      // index and then we can source the correct value.
+      if (i % 2 === 1) {
+        memo.push(supplemental.children[token]);
+      } else if (i !== 0 && i !== arr.length - 1) {
+        memo.push(t.stringLiteral(token));
       }
 
       return memo;
@@ -7367,8 +7368,9 @@ exports.default = function (_ref) {
       }).filter(Boolean);
 
       var supplemental = {
-        props: [],
-        children: []
+        attributes: {},
+        children: {},
+        tags: {}
       };
 
       var quasis = path.node.quasi.quasis;
@@ -7384,47 +7386,47 @@ exports.default = function (_ref) {
         return;
       }
 
-      var HTML = [];
+      // Used to store markup and tokens.
+      var HTML = '';
       var dynamicBits = [];
 
-      quasis.forEach(function (quasi) {
-        HTML.push(quasi.value.raw);
+      // Nearly identical logic to the diffHTML parser, as we have the static
+      // vs dynamic parts pre-separated for us and we simply need to fuse them
+      // together.
+      quasis.forEach(function (quasi, i) {
+        HTML += quasi.value.raw;
 
         if (expressions.length) {
           var expression = expressions.shift();
+          var lastSegment = HTML.split(' ').pop();
+          var lastCharacter = lastSegment.trim().slice(-1);
+          var isAttribute = Boolean(HTML.match(isAttributeEx));
+          var isTag = Boolean(lastCharacter.match(isTagEx));
+          var isString = expression.type === 'StringLiteral';
+          var isObject = expression.type === 'ObjectExpression';
+          var isArray = expression.type === 'ArrayExpression';
+          var isIdentifier = expression.type === 'Identifier';
+          var token = TOKEN + i + '__';
 
-          if (expression.type === 'StringLiteral') {
-            HTML.push(expression.value);
-          } else {
-            var string = HTML[HTML.length - 1] || '';
-            var lastSegment = string.split(' ').pop();
-            var lastCharacter = lastSegment.trim().slice(-1);
-            var isProp = Boolean(lastCharacter.match(isPropEx));
-
-            var wholeHTML = HTML.join('');
-            var lastStart = wholeHTML.lastIndexOf('<');
-            var lastEnd = wholeHTML.lastIndexOf('>');
-
-            if (lastEnd === -1 && lastStart !== -1) {
-              isProp = true;
-            } else if (lastEnd > lastStart) {
-              isProp = false;
-            } else if (lastEnd < lastStart) {
-              isProp = true;
-            }
-
-            HTML.push(symbol);
-
-            if (isProp) {
-              supplemental.props.push(expression);
-            } else {
-              supplemental.children.push(expression);
-            }
+          // Injected as attribute.
+          if (isAttribute) {
+            supplemental.attributes[i] = expression;
+            HTML += token;
           }
+          // Injected as a tag.
+          else if (isTag && !isString) {
+              supplemental.tags[i] = expression;
+              HTML += token;
+            }
+            // Injected as a child node.
+            else if (expression) {
+                supplemental.children[i] = expression;
+                HTML += token;
+              }
         }
       });
 
-      var root = (0, _parser2.default)(HTML.join(''), null, { strict: false }).childNodes;
+      var root = (0, _parser2.default)(HTML, null, { strict: false }).childNodes;
       var strRoot = JSON.stringify(root.length === 1 ? root[0] : root);
       var vTree = babylon.parse('(' + strRoot + ')');
 
@@ -7487,6 +7489,15 @@ exports.default = function (_ref) {
 
           var args = [];
 
+          // Replace attribute values.
+          attributes.properties.forEach(function (property) {
+            var token = property.value.value.match(tokenEx);
+
+            if (token) {
+              property.value = supplemental.attributes[token[1]];
+            }
+          });
+
           // Real elements.
           if (nodeType === 1) {
             // Check childNodes.
@@ -7510,17 +7521,11 @@ exports.default = function (_ref) {
           else if (nodeType === 3) {
               var value = nodeValue.value || '';
 
-              if (value.trim() === symbol) {
-                var _childNodes = supplemental.children.shift();
-
-                args.push(createTree, [_childNodes]);
-
-                isDynamic = true;
-              } else if (value.indexOf(symbol) > -1) {
-                var values = splitDyanmicValues(value, supplemental.children);
+              if (value.match(tokenEx)) {
+                var values = interpolateValues(value, supplemental);
 
                 if (values.elements.length === 1) {
-                  args.push(values.elements[0]);
+                  args.replacement = values.elements[0];
                 } else {
                   args.push(createTree, [t.stringLiteral('#document-fragment'), t.nullLiteral(), values.length === 1 ? values[0] : values]);
                 }
@@ -7581,8 +7586,11 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var symbol = '__DIFFHTML_BABEL__';
-var isPropEx = /(=|'|")/;
+var TOKEN = '__DIFFHTML_BABEL__';
+var tokenEx = /__DIFFHTML_BABEL__([^_]*)__/;
+var hasNonWhitespaceEx = /\S/;
+var isAttributeEx = /(=|"|')[^><]*?$/;
+var isTagEx = /(<|\/)/;
 
 /**
  * Transpiles a matching tagged template literal to createTree calls, the
@@ -7619,6 +7627,7 @@ function _toConsumableArray(arr) {
   }
 }
 
+var CreateTreeHookCache = _util.MiddlewareCache.CreateTreeHookCache;
 var assign = Object.assign;
 var isArray = Array.isArray;
 
@@ -7650,7 +7659,7 @@ function createTree(input, attributes, childNodes) {
         var _childNodes;
 
         (_childNodes = childNodes).push.apply(_childNodes, _toConsumableArray(newTree.childNodes));
-      } else if (newTree) {
+      } else {
         childNodes.push(newTree);
       }
     }
@@ -7703,9 +7712,9 @@ function createTree(input, attributes, childNodes) {
       }
     }
 
-    var vTree = createTree(input.nodeName, attributes, childNodes);
-    _util.NodeCache.set(vTree, input);
-    return vTree;
+    var _vTree = createTree(input.nodeName, attributes, childNodes);
+    _util.NodeCache.set(_vTree, input);
+    return _vTree;
   }
 
   // Assume any object value is a valid VTree object.
@@ -7782,7 +7791,17 @@ function createTree(input, attributes, childNodes) {
     entry.key = String(entry.attributes.key);
   }
 
-  return entry;
+  var vTree = entry;
+
+  CreateTreeHookCache.forEach(function (fn, retVal) {
+    // Invoke all the `createNodeHook` functions passing along this transaction
+    // as the only argument. These functions must return valid vTree values.
+    if (retVal = fn(vTree)) {
+      vTree = retVal;
+    }
+  });
+
+  return vTree;
 }
 module.exports = exports['default'];
 
@@ -7818,73 +7837,145 @@ function _interopRequireDefault(obj) {
 
 
 },{"./create":4,"./sync":6}],6:[function(require,module,exports){
+(function (process){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = syncTree;
+
+var _caches = require('../util/caches');
+
+var SyncTreeHookCache = _caches.MiddlewareCache.SyncTreeHookCache;
 var assign = Object.assign,
     keys = Object.keys;
 
 var empty = {};
+var keyNames = ['old', 'new'];
 
-// Reuse these maps, it's more performant to clear them than to recreate.
-var oldKeys = new Map();
-var newKeys = new Map();
-
-var propToAttrMap = {
-  className: 'class',
-  htmlFor: 'for'
-};
-
-var addTreeOperations = function addTreeOperations(TREE_OPS, patchset) {
-  var INSERT_BEFORE = patchset.INSERT_BEFORE,
-      REMOVE_CHILD = patchset.REMOVE_CHILD,
-      REPLACE_CHILD = patchset.REPLACE_CHILD;
-
-  // We want to look if anything has changed, if nothing has we won't add it to
-  // the patchset.
-
-  if (INSERT_BEFORE || REMOVE_CHILD || REPLACE_CHILD) {
-    TREE_OPS.push(patchset);
-  }
-};
-
+// Compares how the new state should look to the old state and mutates it,
+// while recording the changes along the way.
 function syncTree(oldTree, newTree, patches) {
-  if (!newTree) {
-    throw new Error('Missing new tree to sync into');
+  // Allow a pointer to be set to a different render tree.
+  if (_caches.TreePointerCache.has(oldTree)) {
+    oldTree = _caches.TreePointerCache.get(oldTree);
   }
+
+  if (!oldTree) oldTree = empty;
+  if (!newTree) newTree = empty;
+
+  var oldNodeName = oldTree.nodeName;
+  var newNodeName = newTree.nodeName;
+  var isFragment = newTree.nodeType === 11;
+  var isEmpty = oldTree === empty;
+
+  // Reuse these maps, it's more efficient to clear them than to re-create.
+  var keysLookup = { old: new Map(), new: new Map() };
+
+  if (process.env.NODE_ENV !== 'production') {
+    if (newTree === empty) {
+      throw new Error('Missing new Virtual Tree to sync changes from');
+    }
+
+    if (!isEmpty && oldNodeName !== newNodeName && !isFragment) {
+      throw new Error('Sync failure, cannot compare ' + newNodeName + ' with ' + oldNodeName);
+    }
+  }
+
+  // Reduce duplicate logic by condensing old and new operations in a loop.
+  for (var i = 0; i < keyNames.length; i++) {
+    var keyName = keyNames[i];
+    var map = keysLookup[keyName];
+    var vTree = arguments[i];
+    var nodes = vTree && vTree.childNodes;
+
+    if (nodes && nodes.length) {
+      for (var _i = 0; _i < nodes.length; _i++) {
+        var _vTree = nodes[_i];
+
+        if (_vTree.key) {
+          map.set(_vTree.key, _vTree);
+        } else if (map.size && _vTree.nodeType === 1) {
+          if (process.env.NODE_ENV !== 'production') {
+            throw new Error('Missing `key` all siblings must supply this attribute.\n\nVirtual Element: ' + JSON.stringify(_vTree, null, 2));
+          }
+        }
+      }
+    }
+  }
+
+  // Invoke any middleware hooks, allow the middleware to replace the
+  // `newTree`. Pass along the `keysLookup` object so that middleware can make
+  // smart decisions when dealing with keys.
+  SyncTreeHookCache.forEach(function (fn, retVal) {
+    if (retVal = fn(oldTree, newTree, null)) {
+      newTree = retVal;
+    }
+
+    for (var _i2 = 0; _i2 < newTree.childNodes.length; _i2++) {
+      var oldChildNode = isEmpty ? empty : oldTree.childNodes[_i2];
+      var newChildNode = newTree.childNodes[_i2];
+
+      if (retVal = fn(oldChildNode, newChildNode, keysLookup)) {
+        newTree.childNodes[_i2] = retVal;
+      }
+    }
+  });
 
   // Create new arrays for patches or use existing from a recursive call.
   patches = patches || {
-    TREE_OPS: [],
-    NODE_VALUE: [],
     SET_ATTRIBUTE: [],
-    REMOVE_ATTRIBUTE: []
+    REMOVE_ATTRIBUTE: [],
+    TREE_OPS: [],
+    NODE_VALUE: []
   };
 
   var _patches = patches,
-      TREE_OPS = _patches.TREE_OPS,
-      NODE_VALUE = _patches.NODE_VALUE,
       SET_ATTRIBUTE = _patches.SET_ATTRIBUTE,
-      REMOVE_ATTRIBUTE = _patches.REMOVE_ATTRIBUTE;
+      REMOVE_ATTRIBUTE = _patches.REMOVE_ATTRIBUTE,
+      TREE_OPS = _patches.TREE_OPS,
+      NODE_VALUE = _patches.NODE_VALUE;
 
   // Build up a patchset object to use for tree operations.
 
   var patchset = {
-    INSERT_BEFORE: null,
-    REMOVE_CHILD: null,
-    REPLACE_CHILD: null
+    INSERT_BEFORE: [],
+    REMOVE_CHILD: [],
+    REPLACE_CHILD: []
   };
 
+  // USED: INSERT_BEFORE: 3x, REMOVE_CHILD: 2x, REPLACE_CHILD: 3x.
+  var INSERT_BEFORE = patchset.INSERT_BEFORE,
+      REMOVE_CHILD = patchset.REMOVE_CHILD,
+      REPLACE_CHILD = patchset.REPLACE_CHILD;
+
+  var isElement = newTree.nodeType === 1;
+
+  // Text nodes are low level and frequently change, so this path is accounted
+  // for first.
+  if (newTree.nodeName === '#text') {
+    // If there was no previous element to compare to, simply set the value
+    // on the new node.
+    if (oldTree.nodeName !== '#text') {
+      NODE_VALUE.push(newTree, newTree.nodeValue, null);
+    }
+    // If both VTrees are text nodes and the values are different, change the
+    // `Element#nodeValue`.
+    else if (!isEmpty && oldTree.nodeValue !== newTree.nodeValue) {
+        NODE_VALUE.push(oldTree, newTree.nodeValue, oldTree.nodeValue);
+        oldTree.nodeValue = newTree.nodeValue;
+      }
+
+    return patches;
+  }
+
   // Seek out attribute changes first, but only from element Nodes.
-  if (newTree.nodeType === 1) {
-    var oldAttributes = oldTree ? oldTree.attributes : empty;
+  if (isElement) {
+    var oldAttributes = isEmpty ? empty : oldTree.attributes;
     var newAttributes = newTree.attributes;
 
     // Search for sets and changes.
-
     for (var key in newAttributes) {
       var value = newAttributes[key];
 
@@ -7892,105 +7983,46 @@ function syncTree(oldTree, newTree, patches) {
         continue;
       }
 
-      if (oldTree) {
+      if (!isEmpty) {
         oldAttributes[key] = value;
       }
 
-      // Alias prop names to attr names for patching purposes.
-      if (key in propToAttrMap) {
-        key = propToAttrMap[key];
-      }
-
-      SET_ATTRIBUTE.push(oldTree || newTree, key, value);
+      SET_ATTRIBUTE.push(isEmpty ? newTree : oldTree, key, value);
     }
 
-    if (oldTree) {
-      // Search for removals.
+    // Search for removals.
+    if (!isEmpty) {
       for (var _key in oldAttributes) {
         if (_key in newAttributes) {
           continue;
         }
-        REMOVE_ATTRIBUTE.push(oldTree || newTree, _key);
+        REMOVE_ATTRIBUTE.push(oldTree, _key);
         delete oldAttributes[_key];
       }
     }
   }
 
-  // If both VTrees are text nodes and the values are different, change the
-  // NODE_VALUE.
-  if (newTree.nodeName === '#text') {
-    if (oldTree && oldTree.nodeName === '#text') {
-      if (oldTree.nodeValue !== newTree.nodeName) {
-        NODE_VALUE.push(oldTree, newTree.nodeValue, oldTree.nodeValue);
-        oldTree.nodeValue = newTree.nodeValue;
-        addTreeOperations(TREE_OPS, patchset);
-        return patches;
-      }
-    } else {
-      NODE_VALUE.push(newTree, newTree.nodeValue, null);
-      addTreeOperations(TREE_OPS, patchset);
-      return patches;
-    }
-  }
-
-  // If there was no oldTree specified, this is a new element so scan for
-  // attributes.
-  if (!oldTree) {
-    // Dig into all nested children for attribute changes.
-    for (var i = 0; i < newTree.childNodes.length; i++) {
-      syncTree(null, newTree.childNodes[i], patches);
-    }
-
+  // If there was no `oldTree` provided, we have sync'd all the attributes and
+  // the node value of the `newTree` so we can early abort and not worry about
+  // tree operations.
+  if (isEmpty) {
     return patches;
   }
 
-  var oldNodeName = oldTree.nodeName;
-  var newNodeName = newTree.nodeName;
-
-  if (oldNodeName !== newNodeName && newTree.nodeType !== 11) {
-    throw new Error('Sync failure, cannot compare ' + newNodeName + ' with ' + oldNodeName);
+  // If we somehow end up comparing two totally different kinds of elements,
+  // we'll want to raise an error to let the user know something is wrong.
+  if (process.env.NODE_ENV !== 'production') {
+    if (oldNodeName !== newNodeName && !isFragment) {
+      throw new Error('Sync failure, cannot compare ' + newNodeName + ' with ' + oldNodeName);
+    }
   }
 
   var oldChildNodes = oldTree.childNodes;
   var newChildNodes = newTree.childNodes;
 
-  // Determines if any of the elements have a key attribute. If so, then we can
-  // safely assume keys are being used here for optimization/transition
-  // purposes.
-
-  var hasOldKeys = oldChildNodes.some(function (vTree) {
-    return vTree.key;
-  });
-  var hasNewKeys = newChildNodes.some(function (vTree) {
-    return vTree.key;
-  });
-
   // If we are working with keys, we can follow an optimized path.
-  if (hasOldKeys || hasNewKeys) {
-    oldKeys.clear();
-    newKeys.clear();
-
-    // Put the old `childNode` VTree's into the key cache for lookup.
-    for (var _i = 0; _i < oldChildNodes.length; _i++) {
-      var vTree = oldChildNodes[_i];
-
-      // Only add references if the key exists, otherwise ignore it. This
-      // allows someone to specify a single key and keep that element around.
-      if (vTree.key) {
-        oldKeys.set(vTree.key, vTree);
-      }
-    }
-
-    // Put the new `childNode` VTree's into the key cache for lookup.
-    for (var _i2 = 0; _i2 < newChildNodes.length; _i2++) {
-      var _vTree = newChildNodes[_i2];
-
-      // Only add references if the key exists, otherwise ignore it. This
-      // allows someone to specify a single key and keep that element around.
-      if (_vTree.key) {
-        newKeys.set(_vTree.key, _vTree);
-      }
-    }
+  if (keysLookup.old.size || keysLookup.new.size) {
+    var values = keysLookup.old.values();
 
     // Do a single pass over the new child nodes.
     for (var _i3 = 0; _i3 < newChildNodes.length; _i3++) {
@@ -7999,47 +8031,27 @@ function syncTree(oldTree, newTree, patches) {
       var newKey = newChildNode.key;
 
       // If there is no old element to compare to, this is a simple addition.
-
       if (!oldChildNode) {
-        // Prefer an existing match to a brand new element.
-        var optimalNewNode = null;
-
-        // Prefer existing to new and remove from old position.
-        if (oldKeys.has(newKey)) {
-          optimalNewNode = oldKeys.get(newKey);
-          oldChildNodes.splice(oldChildNodes.indexOf(optimalNewNode), 1);
-        } else {
-          optimalNewNode = newChildNode;
-        }
-
-        if (patchset.INSERT_BEFORE === null) {
-          patchset.INSERT_BEFORE = [];
-        }
-        patchset.INSERT_BEFORE.push(oldTree, optimalNewNode, null);
-        oldChildNodes.push(optimalNewNode);
-        syncTree(null, optimalNewNode, patches);
+        INSERT_BEFORE.push(oldTree, newChildNode, null);
+        oldChildNodes.push(newChildNode);
+        syncTree(null, newChildNode, patches);
         continue;
       }
 
       var oldKey = oldChildNode.key;
+      var oldInNew = keysLookup.new.has(oldKey);
+      var newInOld = keysLookup.old.has(newKey);
 
       // Remove the old Node and insert the new node (aka replace).
-
-      if (!newKeys.has(oldKey) && !oldKeys.has(newKey)) {
-        if (patchset.REPLACE_CHILD === null) {
-          patchset.REPLACE_CHILD = [];
-        }
-        //if (newChildNode.nodeType === 11) { debugger; }
-        patchset.REPLACE_CHILD.push(newChildNode, oldChildNode);
+      if (!oldInNew && !newInOld) {
+        REPLACE_CHILD.push(newChildNode, oldChildNode);
         oldChildNodes.splice(oldChildNodes.indexOf(oldChildNode), 1, newChildNode);
+        syncTree(null, newChildNode, patches);
         continue;
       }
       // Remove the old node instead of replacing.
-      else if (!newKeys.has(oldKey)) {
-          if (patchset.REMOVE_CHILD === null) {
-            patchset.REMOVE_CHILD = [];
-          }
-          patchset.REMOVE_CHILD.push(oldChildNode);
+      else if (!oldInNew) {
+          REMOVE_CHILD.push(oldChildNode);
           oldChildNodes.splice(oldChildNodes.indexOf(oldChildNode), 1);
           _i3 = _i3 - 1;
           continue;
@@ -8048,32 +8060,28 @@ function syncTree(oldTree, newTree, patches) {
       // If there is a key set for this new element, use that to figure out
       // which element to use.
       if (newKey !== oldKey) {
-        var _optimalNewNode = newChildNode;
+        var optimalNewNode = newChildNode;
 
         // Prefer existing to new and remove from old position.
-        if (newKey && oldKeys.has(newKey)) {
-          _optimalNewNode = oldKeys.get(newKey);
-          oldChildNodes.splice(oldChildNodes.indexOf(_optimalNewNode), 1);
+        if (newKey && newInOld) {
+          optimalNewNode = keysLookup.old.get(newKey);
+          oldChildNodes.splice(oldChildNodes.indexOf(optimalNewNode), 1);
         } else if (newKey) {
-          _optimalNewNode = newChildNode;
+          optimalNewNode = newChildNode;
+
+          // Find attribute changes for this Node.
+          syncTree(null, newChildNode, patches);
         }
 
-        if (patchset.INSERT_BEFORE === null) {
-          patchset.INSERT_BEFORE = [];
-        }
-        patchset.INSERT_BEFORE.push(oldTree, _optimalNewNode, oldChildNode);
-        oldChildNodes.splice(_i3, 0, _optimalNewNode);
+        INSERT_BEFORE.push(oldTree, optimalNewNode, oldChildNode);
+        oldChildNodes.splice(_i3, 0, optimalNewNode);
         continue;
       }
 
       // If the element we're replacing is totally different from the previous
       // replace the entire element, don't bother investigating children.
       if (oldChildNode.nodeName !== newChildNode.nodeName) {
-        if (patchset.REPLACE_CHILD === null) {
-          patchset.REPLACE_CHILD = [];
-        }
-        //if (newChildNode.nodeType === 11) { debugger; }
-        patchset.REPLACE_CHILD.push(newChildNode, oldChildNode);
+        REPLACE_CHILD.push(newChildNode, oldChildNode);
         oldTree.childNodes[_i3] = newChildNode;
         syncTree(null, newChildNode, patches);
         continue;
@@ -8092,10 +8100,7 @@ function syncTree(oldTree, newTree, patches) {
 
         // If there is no old element to compare to, this is a simple addition.
         if (!_oldChildNode) {
-          if (patchset.INSERT_BEFORE === null) {
-            patchset.INSERT_BEFORE = [];
-          }
-          patchset.INSERT_BEFORE.push(oldTree, _newChildNode, null);
+          INSERT_BEFORE.push(oldTree, _newChildNode, null);
           oldChildNodes.push(_newChildNode);
           syncTree(null, _newChildNode, patches);
           continue;
@@ -8104,11 +8109,7 @@ function syncTree(oldTree, newTree, patches) {
         // If the element we're replacing is totally different from the previous
         // replace the entire element, don't bother investigating children.
         if (_oldChildNode.nodeName !== _newChildNode.nodeName) {
-          if (patchset.REPLACE_CHILD === null) {
-            patchset.REPLACE_CHILD = [];
-          }
-          patchset.REPLACE_CHILD.push(_newChildNode, _oldChildNode);
-          //if (newChildNode.nodeType === 11) { debugger; }
+          REPLACE_CHILD.push(_newChildNode, _oldChildNode);
           oldTree.childNodes[_i4] = _newChildNode;
           syncTree(null, _newChildNode, patches);
           continue;
@@ -8122,23 +8123,36 @@ function syncTree(oldTree, newTree, patches) {
   // lengths to be equal.
   if (oldChildNodes.length !== newChildNodes.length) {
     for (var _i5 = newChildNodes.length; _i5 < oldChildNodes.length; _i5++) {
-      if (patchset.REMOVE_CHILD === null) {
-        patchset.REMOVE_CHILD = [];
-      }
-      patchset.REMOVE_CHILD.push(oldChildNodes[_i5]);
+      REMOVE_CHILD.push(oldChildNodes[_i5]);
     }
 
     oldChildNodes.length = newChildNodes.length;
   }
 
-  addTreeOperations(TREE_OPS, patchset);
+  // We want to look if anything has changed, if nothing has we won't add it to
+  // the patchset.
+  if (INSERT_BEFORE.length || REMOVE_CHILD.length || REPLACE_CHILD.length) {
+    // Null out the empty arrays.
+    if (!INSERT_BEFORE.length) {
+      patchset.INSERT_BEFORE = null;
+    }
+    if (!REMOVE_CHILD.length) {
+      patchset.REMOVE_CHILD = null;
+    }
+    if (!REPLACE_CHILD.length) {
+      patchset.REPLACE_CHILD = null;
+    }
+
+    TREE_OPS.push(patchset);
+  }
 
   return patches;
 }
 module.exports = exports['default'];
 
 
-},{}],7:[function(require,module,exports){
+}).call(this,require('_process'))
+},{"../util/caches":7,"_process":2}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -8147,14 +8161,25 @@ Object.defineProperty(exports, "__esModule", {
 // Associates DOM Nodes with state objects.
 var StateCache = exports.StateCache = new Map();
 
+// Allows VTree's to "point" to other Nodes. Useful for multiple nested mount
+// points (allowing VTrees to be reused). This is also used by Components and
+// potentially other use cases. Must be built into diffHTML for the most
+// seamless integration.
+var TreePointerCache = exports.TreePointerCache = new Map();
+
 // Associates Virtual Tree Elements with DOM Nodes.
 var NodeCache = exports.NodeCache = new Map();
+
+// Cache transition functions.
+var TransitionCache = exports.TransitionCache = new Map();
 
 // Caches all middleware. You cannot unset a middleware once it has been added.
 var MiddlewareCache = exports.MiddlewareCache = new Set();
 
-// Cache transition functions.
-var TransitionCache = exports.TransitionCache = new Map();
+// Very specific caches used by middleware.
+MiddlewareCache.CreateTreeHookCache = new Set();
+MiddlewareCache.CreateNodeHookCache = new Set();
+MiddlewareCache.SyncTreeHookCache = new Set();
 
 
 },{}],8:[function(require,module,exports){
@@ -8400,6 +8425,16 @@ function unprotectVTree(vTree) {
  * diffHTML in a consistent state after synchronizing.
  */
 function cleanMemory() {
+  var isBusy = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+  _caches.StateCache.forEach(function (state) {
+    return isBusy = state.isRendering || isBusy;
+  });
+
+  if (isBusy) {
+    //return;
+  }
+
   memory.allocated.forEach(function (vTree) {
     return memory.free.add(vTree);
   });
@@ -8454,7 +8489,8 @@ var tagEx = /<!--[^]*?(?=-->)-->|<(\/?)([a-z\-\_][a-z0-9\-\_]*)\s*([^>]*?)(\/?)>
 var assign = Object.assign;
 
 var blockText = new Set(['script', 'noscript', 'style', 'code', 'template']);
-var selfClosing = new Set(['meta', 'img', 'link', 'input', 'area', 'br', 'hr']);
+
+var selfClosing = new Set(['meta', 'img', 'link', 'input', 'area', 'br', 'hr', 'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
 
 var kElementsClosedByOpening = {
   li: { li: true },
@@ -8684,30 +8720,6 @@ function parse(html, supplemental) {
         }
 
         var newText = html.slice(match.index + match[0].length, index);
-
-        // TODO Determine if a closing tag is present.
-        //if (options.strict) {
-        //  const nodeName = currentParent.rawNodeName;
-
-        //  // Find a subset of the markup passed in to validate.
-        //  const markup = markup.slice(
-        //    tagEx.lastIndex - match[0].length
-        //  ).split('\n').slice(0, 3);
-
-        //  console.log(markup);
-
-        //  // Position the caret next to the first non-whitespace character.
-        //  const caret = Array(spaceEx.exec(markup[0]).index).join(' ') + '^';
-
-        //  // Craft the warning message and inject it into the markup.
-        //  markup.splice(1, 0, `${caret}
-        //Invali markup. Saw ${match[2]}, expected ${nodeName}
-        //  `);
-
-        //  // Throw an error message if the markup isn't what we expected.
-        //  throw new Error(`\n\n${markup.join('\n')}`);
-        //}
-
         interpolateValues(currentParent, newText.trim(), supplemental);
       }
     }
@@ -8744,7 +8756,7 @@ function parse(html, supplemental) {
         else if (tokenMatch) {
             var value = supplemental.tags[tokenMatch[1]];
 
-            if (currentParent.nodeName === value) {
+            if (currentParent.rawNodeName === value) {
               stack.pop();
               currentParent = stack[stack.length - 1];
 
@@ -8752,7 +8764,7 @@ function parse(html, supplemental) {
             }
           }
 
-        if (currentParent.rawNodeName == match[2]) {
+        if (currentParent.rawNodeName === match[2]) {
           stack.pop();
           currentParent = stack[stack.length - 1];
 
@@ -8762,7 +8774,6 @@ function parse(html, supplemental) {
 
           // Trying to close current tag, and move on
           if (tag) {
-
             if (tag[match[2]]) {
               stack.pop();
               currentParent = stack[stack.length - 1];
@@ -8938,7 +8949,8 @@ for (var i = 0; i < size; i++) {
   free.add(shape());
 }
 
-// Cache the values object, this is a live reference.
+// Cache the values object, we'll refer to this iterator which is faster
+// than calling it every single time. It gets replaced once exhausted.
 var freeValues = free.values();
 
 // Cache VTree objects in a pool which is used to get
@@ -8947,7 +8959,19 @@ exports.default = {
   memory: memory,
 
   get: function get() {
-    var value = freeValues.next().value || shape();
+    var _freeValues$next = freeValues.next(),
+        _freeValues$next$valu = _freeValues$next.value,
+        value = _freeValues$next$valu === undefined ? shape() : _freeValues$next$valu,
+        done = _freeValues$next.done;
+
+    // This extra bit of work allows us to avoid calling `free.values()` every
+    // single time an object is needed.
+
+
+    if (done) {
+      freeValues = free.values();
+    }
+
     free.delete(value);
     allocate.add(value);
     return value;

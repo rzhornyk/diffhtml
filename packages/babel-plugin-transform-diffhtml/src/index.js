@@ -2,8 +2,11 @@ import parse from 'diffhtml/dist/cjs/util/parser';
 import * as babylon from 'babylon';
 import Global from './global';
 
-const TOKEN = '__DIFFHTML__';
-const isPropEx = /(=|'|")/;
+const TOKEN = '__DIFFHTML_BABEL__';
+const tokenEx = /__DIFFHTML_BABEL__([^_]*)__/;
+const hasNonWhitespaceEx = /\S/;
+const isAttributeEx = /(=|"|')[^><]*?$/;
+const isTagEx = /(<|\/)/;
 
 /**
  * Transpiles a matching tagged template literal to createTree calls, the
@@ -15,7 +18,7 @@ export default function({ types: t }) {
   // If dynamic bits are interpolated between strings, this will concatenate
   // them together.
   const makeConcatExpr = (value, supplemental) => {
-    return value.split(symbol).reduce((memo, str, i, parts) => {
+    return value.split(TOKEN).reduce((memo, str, i, parts) => {
       // Last part should be string terminator
       if (i === parts.length - 1 && memo) {
         memo = t.binaryExpression('+', memo, t.stringLiteral(str));
@@ -38,17 +41,19 @@ export default function({ types: t }) {
     }, null);
   };
 
-  const splitDyanmicValues = (value, supplemental) => {
-    const expressions = value.split(symbol).reduce((memo, str, i, arr) => {
-      const isEmpty = !Boolean(str);
+  // Takes in a string and determines if any part needs splitting.
+  const interpolateValues = (value, supplemental) => {
+    const expressions = value.split(tokenEx).reduce((memo, token, i, arr) => {
+      const isEmpty = !Boolean(token);
 
-      if (!isEmpty) {
-        memo.push(t.stringLiteral(str));
+      // When we split on the token expression, the capture group will replace
+      // the token's position. So all we do is ensure that we're on an odd
+      // index and then we can source the correct value.
+      if (i % 2 === 1) {
+        memo.push(supplemental.children[token]);
       }
-
-      // If not the last one.
-      if (i !== arr.length - 1) {
-        memo.push(supplemental.shift());
+      else if (i !== 0 && i !== arr.length - 1) {
+        memo.push(t.stringLiteral(token));
       }
 
       return memo;
@@ -146,53 +151,47 @@ export default function({ types: t }) {
         return;
       }
 
-      const HTML = [];
+      // Used to store markup and tokens.
+      let HTML = '';
       const dynamicBits = [];
 
+      // Nearly identical logic to the diffHTML parser, as we have the static
+      // vs dynamic parts pre-separated for us and we simply need to fuse them
+      // together.
       quasis.forEach((quasi, i) => {
-        HTML.push(quasi.value.raw);
+        HTML += quasi.value.raw;
 
         if (expressions.length) {
-          let expression = expressions.shift();
+          const expression = expressions.shift();
+          const lastSegment = HTML.split(' ').pop();
+          const lastCharacter = lastSegment.trim().slice(-1);
+          const isAttribute = Boolean(HTML.match(isAttributeEx));
+          const isTag = Boolean(lastCharacter.match(isTagEx));
+          const isString = expression.type === 'StringLiteral';
+          const isObject = expression.type === 'ObjectExpression';
+          const isArray = expression.type === 'ArrayExpression';
+          const isIdentifier = expression.type === 'Identifier';
+          const token = TOKEN + i + '__';
 
-          if (expression.type === 'StringLiteral') {
-            HTML.push(expression.value);
+          // Injected as attribute.
+          if (isAttribute) {
+            supplemental.attributes[i] = expression;
+            HTML += token;
           }
-          else {
-            let string = HTML[HTML.length - 1] || '';
-            let lastSegment = string.split(' ').pop();
-            let lastCharacter = lastSegment.trim().slice(-1);
-            let isProp = Boolean(lastCharacter.match(isPropEx));
-
-            let wholeHTML = HTML.join('');
-            let lastStart = wholeHTML.lastIndexOf('<');
-            let lastEnd = wholeHTML.lastIndexOf('>');
-
-            if (lastEnd === -1 && lastStart !== -1) {
-              isProp = true;
-            }
-            else if (lastEnd > lastStart) {
-              isProp = false;
-            }
-            else if (lastEnd < lastStart) {
-              isProp = true;
-            }
-
-            const token = TOKEN + i + '__';
-
-            HTML.push(token);
-
-            if (isProp) {
-              supplemental.props[i] = expression;
-            }
-            else {
-              supplemental.children[i] = expression;
-            }
+          // Injected as a tag.
+          else if (isTag && !isString) {
+            supplemental.tags[i] = expression;
+            HTML += token;
+          }
+          // Injected as a child node.
+          else if (expression) {
+            supplemental.children[i] = expression;
+            HTML += token;
           }
         }
       });
 
-      const root = parse(HTML.join(''), null, { strict: false }).childNodes;
+      const root = parse(HTML, null, { strict: false }).childNodes;
       const strRoot = JSON.stringify(root.length === 1 ? root[0] : root);
       const vTree = babylon.parse('(' + strRoot + ')');
 
@@ -251,6 +250,15 @@ export default function({ types: t }) {
 
           const args = [];
 
+          // Replace attribute values.
+          attributes.properties.forEach(property => {
+            const token = property.value.value.match(tokenEx);
+
+            if (token) {
+              property.value = supplemental.attributes[token[1]];
+            }
+          });
+
           // Real elements.
           if (nodeType === 1) {
             // Check childNodes.
@@ -276,18 +284,11 @@ export default function({ types: t }) {
           else if (nodeType === 3) {
             let value = nodeValue.value || '';
 
-            if (value.trim() === symbol) {
-              const childNodes = supplemental.children.shift();
-
-              args.push(createTree, [childNodes]);
-
-              isDynamic = true;
-            }
-            else if (value.indexOf(symbol) > -1) {
-              const values = splitDyanmicValues(value, supplemental.children);
+            if (value.match(tokenEx)) {
+              const values = interpolateValues(value, supplemental);
 
               if (values.elements.length === 1) {
-                args.push(values.elements[0]);
+                args.replacement = values.elements[0];
               }
               else {
                 args.push(createTree, [
