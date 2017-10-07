@@ -1,58 +1,82 @@
 # API
 
-The core API is designed to be a minimal and extensible.
+While the core API has been designed to be minimalist, it was done so in an
+extensible and revealing way. New users can jump right in and start creating,
+while experienced developers wanting more can dip into the internals for more
+flexibility.
 
-## innerHTML (element, markup='', options={}) <a name="inner-html" />
+<a href="#accessing-the-api" />
+
+## Accessing the API
+
+Depending on how you have configured diffHTML, there are multiple ways to
+access the API.
+
+### Global
+
+This method of accessing diffHTML is good for new users. You can load it
+directly from the diffHTML website with a script tag:
+
+``` html
+<script src="https://diffhtml.org/master/diffhtml/dist/diffhtml.min.js"></script>
+```
+
+You could then access the API in your own scripts by using the global `diff`
+object.
+
+``` js
+diff.innerHTML(document.body, 'Hello world');
+diff.outerHTML(document.body, diff.html`<body>Hello world</body>`);
+```
+
+Although you can also short-hand them (being careful not to expose them as
+global variables):
+
+``` js
+// This creates what is called a block, `const / let` are scoped automatically.
+{
+  // These variables are destructured out of the `diff` object.
+  const { innerHTML, outerHTML } = diff;
+}
+```
+
+### Module (Recommended usage)
+
+diffHTML can be loaded in either CommonJS or ES6 module environments. You can
+use tree-shaking or import individual functions to remove unused code.
+
+With CJS:
+
+``` js
+// By default CJS is assumed when imported with `require`.
+const { innerHTML } = require('diffhtml');
+
+// To require a method using the CJS bundle explictly.
+const { innerHTML } = require('diffhtml/dist/cjs/index');
+
+// Importing only a specific method.
+const innerHTML = require('diffhtml/dist/cjs/inner-html');
+```
+
+For ES6:
 
 ``` js
 import { innerHTML } from 'diffhtml';
-
-innerHTML(document.body, 'Hello world');
 ```
 
-Used to replace the
-[innerHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML)
-of an HTML element with passed in markup. This is what bridges diffHTML to the
-page document. While you can dive head first into this function, you can also
-take it slow and work your way up to something more complex.
+<a name="inner-html" />
 
-<table class="details">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Description</th>
-      <th>Default value</th>
-      <th>Required</th>
-    </tr>
-  </thead>
+## innerHTML 
+**`(domNode, markup, options)`**
 
-  <tbody>
-    <tr>
-      <td class="strong">domNode</td>
-      <td>
-        <ul>
-          <li>
-            A DOM Node that is being tracked by diffHTML
-        </li>
-        </ul>
-      </td>
-      <td><code>undefined</code></td>
-      <td>true</td>
-    </tr>
-    <tr>
-      <td class="strong"></td>
-      <td>
-        <ul>
-          <li>
-            A DOM Node that is being tracked by diffHTML
-        </li>
-        </ul>
-      </td>
-      <td><code>undefined</code></td>
-      <td>true</td>
-    </tr>
-  </tbody>
-</table>
+Replaces the contents of a DOM node with the passed in markup, but only updates
+what has changed.
+
+Example:
+
+``` js
+innerHTML(document.body, 'Hello world');
+```
 
 To see how to run this example yourself see the [Examples](#examples) section
 below.
@@ -63,37 +87,145 @@ The two required inputs are a reference element and new element to compare.
 Although "element" is used, the actual input can be of various input types
 all representing an element (or many elements).
 
-#### element
+<a name="outer-html" />
 
-*Reference element.*
+## outerHTML 
+**`(domNode, markup, options)`**
 
-This argument is overloaded. Can be one of many types:
+Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.
 
-- HTML Element / DOM Node (Used interchangeably)
-- Virtual Tree Element (produced from `diff.html`)
+Example:
 
-#### markup
+``` js
+outerHTML(document.body, 'Hello world');
+```
 
-*New element.*
+To see how to run this example yourself see the [Examples](#examples) section
+below.
 
-This argument is overloaded. Can be one of many types:
+### Arguments
 
-- JavaScript string containing HTML (like those produced from any template engine)
-- DOM Node
-- Virtual Tree Element (produced from `diff.html` or `diff.createTree`)
-- JavaScript array containing DOM Nodes,Virtual Tree Elements, or JSX
-- JSX via (`h(tagName, attributes, ...children)`)
+The two required inputs are a reference element and new element to compare.
+Although "element" is used, the actual input can be of various input types
+all representing an element (or many elements).
 
-#### options
+<a name="html" />
 
-*Optional: Advanced usage for render transaction manipulation.*
+## html
+**`(markup)`**
 
-- `tasks` - Custom array of tasks to run. The default behavior is to parse the
-  input and patch the changes into the DOM Node. The runtime behavior is to
-  normalize the input (but not parse HTML), and patch the changes into the DOM
-  Node. You can override this behavior by changing this array. This is not
-  recommended as there is as a middleware API to achieve custom behavior during
-  a render.
+Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.
+
+Example:
+
+``` js
+outerHTML(document.body, 'Hello world');
+```
+
+To see how to run this example yourself see the [Examples](#examples) section
+below.
+
+### Arguments
+
+The two required inputs are a reference element and new element to compare.
+Although "element" is used, the actual input can be of various input types
+all representing an element (or many elements).
+
+<a name="use" />
+
+## use
+**`(middlewareFunction)`**
+
+Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.
+
+Example:
+
+``` js
+outerHTML(document.body, 'Hello world');
+```
+
+To see how to run this example yourself see the [Examples](#examples) section
+below.
+
+### Arguments
+
+The two required inputs are a reference element and new element to compare.
+Although "element" is used, the actual input can be of various input types
+all representing an element (or many elements).
+
+<a name="add-transition-state" />
+
+## addTransitionState
+**`(stateName, callback)`**
+
+Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.
+
+Example:
+
+``` js
+outerHTML(document.body, 'Hello world');
+```
+
+To see how to run this example yourself see the [Examples](#examples) section
+below.
+
+### Arguments
+
+The two required inputs are a reference element and new element to compare.
+Although "element" is used, the actual input can be of various input types
+all representing an element (or many elements).
+
+<a name="remove-transition-state" />
+
+## removeTransitionState
+**`(stateName, callback)`**
+
+Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.
+
+Example:
+
+``` js
+outerHTML(document.body, 'Hello world');
+```
+
+To see how to run this example yourself see the [Examples](#examples) section
+below.
+
+### Arguments
+
+The two required inputs are a reference element and new element to compare.
+Although "element" is used, the actual input can be of various input types
+all representing an element (or many elements).
+
+<a name="create-tree" />
+
+## createTree
+**`(nodeName, attributes, childNodes)`**
+
+Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.
+
+Example:
+
+``` js
+outerHTML(document.body, 'Hello world');
+```
+
+To see how to run this example yourself see the [Examples](#examples) section
+below.
+
+### Arguments
+
+The two required inputs are a reference element and new element to compare.
+Although "element" is used, the actual input can be of various input types
+all representing an element (or many elements).
+
+<a name="release" />
 
 <a name="release" />
 

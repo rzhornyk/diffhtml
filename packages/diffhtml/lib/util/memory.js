@@ -45,14 +45,14 @@ export function unprotectVTree(vTree) {
  * diffHTML in a consistent state after synchronizing.
  */
 export function cleanMemory(isBusy = false) {
-  StateCache.forEach(state => (isBusy = state.isRendering || isBusy));
-
-  memory.allocated.forEach(vTree => memory.free.add(vTree));
-  memory.allocated.clear();
+  StateCache.forEach(state => (isBusy = isBusy || state.isRendering));
 
   // Clean out unused elements, if we have any elements cached that no longer
   // have a backing VTree, we can safely remove them from the cache.
   if (!isBusy) {
+    memory.allocated.forEach(vTree => memory.free.add(vTree));
+    memory.allocated.clear();
+
     NodeCache.forEach((node, vTree) => {
       if (!memory.protected.has(vTree)) {
         NodeCache.delete(vTree);

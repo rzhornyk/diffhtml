@@ -7,15 +7,27 @@
     </head><body>
       <layer id="navigation">
         <div class="open-menu">≡</div>
+
+        <p class="social">
+          <a class="github" href="https://github.com/tbranyen/diffhtml">
+            <i class="fa fa-github"></i>
+          </a>
+          <a class="stackoverflow" href="https://stackoverflow.com/search?q=diffhtml+javascript">
+            <i class="fa fa-stack-overflow"></i>
+          </a>
+          <a class="twitter" href="https://twitter.com/diffhtml">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a class="reddit" href="https://reddit.com/r/diffhtml">
+            <i class="fa fa-reddit"></i>
+          </a>
+        </p>
+
         <ul>
     
       <a href="index.html"><li class="header"><h4>Getting Started</h4></li></a>
 
       
-    
-      
-
-      <a href="index.html#screencast"><li>Screencast</li></a>
     
       
 
@@ -25,13 +37,13 @@
 
       <a href="index.html#installing"><li>Installing</li></a>
     
-      
-
-      <a href="index.html#accessing-the-api"><li>Accessing the API</li></a>
-    
       <a href="api.html"><li class="header"><h4>API</h4></li></a>
 
       
+    
+      
+
+      <a href="api.html#accessing-the-api"><li>Accessing the API</li></a>
     
       
 
@@ -89,6 +101,30 @@
 
       <a href="transitions.html#textChanged"><li>textChanged</li></a>
     
+      <a href="middleware.html"><li class="header"><h4>Middleware</h4></li></a>
+
+      
+    
+      
+
+      <a href="middleware.html#logger"><li>Logger</li></a>
+    
+      
+
+      <a href="middleware.html#inline-transitions"><li>Inline Transitions</li></a>
+    
+      
+
+      <a href="middleware.html#synthetic-events"><li>Synthetic Events</li></a>
+    
+      
+
+      <a href="middleware.html#service-worker"><li>Service Worker</li></a>
+    
+      
+
+      <a href="middleware.html#verify-state"><li>Verify State</li></a>
+    
       <a href="components.html"><li class="header"><h4>Components</h4></li></a>
 
       
@@ -112,26 +148,6 @@
       
 
       <a href="components.html#react"><li>React Compatibility</li></a>
-    
-      <a href="middleware.html"><li class="header"><h4>Middleware</h4></li></a>
-
-      
-    
-      
-
-      <a href="middleware.html#logging"><li>Logging</li></a>
-    
-      
-
-      <a href="middleware.html#inline-transitions"><li>Inline Transitions</li></a>
-    
-      
-
-      <a href="middleware.html#synthetic-events"><li>Synthetic Events</li></a>
-    
-      
-
-      <a href="middleware.html#verify-state"><li>Verify State</li></a>
     
       <a href="tools.html"><li class="header"><h4>Tools</h4></li></a>
 
@@ -172,88 +188,147 @@
         </header>
 
         <section id="content"><h1 id="api">API</h1>
-<p>The core API is designed to be a minimal and extensible.</p>
-<h2 id="innerhtml-element-markup-options-a-name-inner-html-">innerHTML (element, markup=&#39;&#39;, options={}) <a name="inner-html"></a></h2>
-<pre><code class="lang-js">import { innerHTML } from &#39;diffhtml&#39;;
-
-innerHTML(document.body, &#39;Hello world&#39;);
+<p>While the core API has been designed to be minimalist, it was done so in an
+extensible and revealing way. New users can jump right in and start creating,
+while experienced developers wanting more can dip into the internals for more
+flexibility.</p>
+<p><a href="#accessing-the-api"></a></p>
+<h2 id="accessing-the-api">Accessing the API</h2>
+<p>Depending on how you have configured diffHTML, there are multiple ways to
+access the API.</p>
+<h3 id="global">Global</h3>
+<p>This method of accessing diffHTML is good for new users. You can load it
+directly from the diffHTML website with a script tag:</p>
+<pre><code class="lang-html">&lt;script src=&quot;https://diffhtml.org/master/diffhtml/dist/diffhtml.min.js&quot;&gt;&lt;/script&gt;
 </code></pre>
-<p>Used to replace the
-<a href="https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML">innerHTML</a>
-of an HTML element with passed in markup. This is what bridges diffHTML to the
-page document. While you can dive head first into this function, you can also
-take it slow and work your way up to something more complex.</p>
-<table class="details">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Description</th>
-      <th>Default value</th>
-      <th>Required</th>
-    </tr>
-  </thead>
+<p>You could then access the API in your own scripts by using the global <code>diff</code>
+object.</p>
+<pre><code class="lang-js">diff.innerHTML(document.body, &#39;Hello world&#39;);
+diff.outerHTML(document.body, diff.html`&lt;body&gt;Hello world&lt;/body&gt;`);
+</code></pre>
+<p>Although you can also short-hand them (being careful not to expose them as
+global variables):</p>
+<pre><code class="lang-js">// This creates what is called a block, `const / let` are scoped automatically.
+{
+  // These variables are destructured out of the `diff` object.
+  const { innerHTML, outerHTML } = diff;
+}
+</code></pre>
+<h3 id="module-recommended-usage-">Module (Recommended usage)</h3>
+<p>diffHTML can be loaded in either CommonJS or ES6 module environments. You can
+use tree-shaking or import individual functions to remove unused code.</p>
+<p>With CJS:</p>
+<pre><code class="lang-js">// By default CJS is assumed when imported with `require`.
+const { innerHTML } = require(&#39;diffhtml&#39;);
 
-  <tbody>
-    <tr>
-      <td class="strong">domNode</td>
-      <td>
-        <ul>
-          <li>
-            A DOM Node that is being tracked by diffHTML
-        </li>
-        </ul>
-      </td>
-      <td><code>undefined</code></td>
-      <td>true</td>
-    </tr>
-    <tr>
-      <td class="strong"></td>
-      <td>
-        <ul>
-          <li>
-            A DOM Node that is being tracked by diffHTML
-        </li>
-        </ul>
-      </td>
-      <td><code>undefined</code></td>
-      <td>true</td>
-    </tr>
-  </tbody>
-</table>
+// To require a method using the CJS bundle explictly.
+const { innerHTML } = require(&#39;diffhtml/dist/cjs/index&#39;);
 
+// Importing only a specific method.
+const innerHTML = require(&#39;diffhtml/dist/cjs/inner-html&#39;);
+</code></pre>
+<p>For ES6:</p>
+<pre><code class="lang-js">import { innerHTML } from &#39;diffhtml&#39;;
+</code></pre>
+<p><a name="inner-html"></a></p>
+<h2 id="innerhtml">innerHTML</h2>
+<p><strong><code>(domNode, markup, options)</code></strong></p>
+<p>Replaces the contents of a DOM node with the passed in markup, but only updates
+what has changed.</p>
+<p>Example:</p>
+<pre><code class="lang-js">innerHTML(document.body, &#39;Hello world&#39;);
+</code></pre>
 <p>To see how to run this example yourself see the <a href="#examples">Examples</a> section
 below.</p>
 <h3 id="arguments">Arguments</h3>
 <p>The two required inputs are a reference element and new element to compare.
 Although &quot;element&quot; is used, the actual input can be of various input types
 all representing an element (or many elements).</p>
-<h4 id="element">element</h4>
-<p><em>Reference element.</em></p>
-<p>This argument is overloaded. Can be one of many types:</p>
-<ul>
-<li>HTML Element / DOM Node (Used interchangeably)</li>
-<li>Virtual Tree Element (produced from <code>diff.html</code>)</li>
-</ul>
-<h4 id="markup">markup</h4>
-<p><em>New element.</em></p>
-<p>This argument is overloaded. Can be one of many types:</p>
-<ul>
-<li>JavaScript string containing HTML (like those produced from any template engine)</li>
-<li>DOM Node</li>
-<li>Virtual Tree Element (produced from <code>diff.html</code> or <code>diff.createTree</code>)</li>
-<li>JavaScript array containing DOM Nodes,Virtual Tree Elements, or JSX</li>
-<li>JSX via (<code>h(tagName, attributes, ...children)</code>)</li>
-</ul>
-<h4 id="options">options</h4>
-<p><em>Optional: Advanced usage for render transaction manipulation.</em></p>
-<ul>
-<li><code>tasks</code> - Custom array of tasks to run. The default behavior is to parse the
-input and patch the changes into the DOM Node. The runtime behavior is to
-normalize the input (but not parse HTML), and patch the changes into the DOM
-Node. You can override this behavior by changing this array. This is not
-recommended as there is as a middleware API to achieve custom behavior during
-a render.</li>
-</ul>
+<p><a name="outer-html"></a></p>
+<h2 id="outerhtml">outerHTML</h2>
+<p><strong><code>(domNode, markup, options)</code></strong></p>
+<p>Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.</p>
+<p>Example:</p>
+<pre><code class="lang-js">outerHTML(document.body, &#39;Hello world&#39;);
+</code></pre>
+<p>To see how to run this example yourself see the <a href="#examples">Examples</a> section
+below.</p>
+<h3 id="arguments">Arguments</h3>
+<p>The two required inputs are a reference element and new element to compare.
+Although &quot;element&quot; is used, the actual input can be of various input types
+all representing an element (or many elements).</p>
+<p><a name="html"></a></p>
+<h2 id="html">html</h2>
+<p><strong><code>(markup)</code></strong></p>
+<p>Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.</p>
+<p>Example:</p>
+<pre><code class="lang-js">outerHTML(document.body, &#39;Hello world&#39;);
+</code></pre>
+<p>To see how to run this example yourself see the <a href="#examples">Examples</a> section
+below.</p>
+<h3 id="arguments">Arguments</h3>
+<p>The two required inputs are a reference element and new element to compare.
+Although &quot;element&quot; is used, the actual input can be of various input types
+all representing an element (or many elements).</p>
+<p><a name="use"></a></p>
+<h2 id="use">use</h2>
+<p><strong><code>(middlewareFunction)</code></strong></p>
+<p>Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.</p>
+<p>Example:</p>
+<pre><code class="lang-js">outerHTML(document.body, &#39;Hello world&#39;);
+</code></pre>
+<p>To see how to run this example yourself see the <a href="#examples">Examples</a> section
+below.</p>
+<h3 id="arguments">Arguments</h3>
+<p>The two required inputs are a reference element and new element to compare.
+Although &quot;element&quot; is used, the actual input can be of various input types
+all representing an element (or many elements).</p>
+<p><a name="add-transition-state"></a></p>
+<h2 id="addtransitionstate">addTransitionState</h2>
+<p><strong><code>(stateName, callback)</code></strong></p>
+<p>Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.</p>
+<p>Example:</p>
+<pre><code class="lang-js">outerHTML(document.body, &#39;Hello world&#39;);
+</code></pre>
+<p>To see how to run this example yourself see the <a href="#examples">Examples</a> section
+below.</p>
+<h3 id="arguments">Arguments</h3>
+<p>The two required inputs are a reference element and new element to compare.
+Although &quot;element&quot; is used, the actual input can be of various input types
+all representing an element (or many elements).</p>
+<p><a name="remove-transition-state"></a></p>
+<h2 id="removetransitionstate">removeTransitionState</h2>
+<p><strong><code>(stateName, callback)</code></strong></p>
+<p>Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.</p>
+<p>Example:</p>
+<pre><code class="lang-js">outerHTML(document.body, &#39;Hello world&#39;);
+</code></pre>
+<p>To see how to run this example yourself see the <a href="#examples">Examples</a> section
+below.</p>
+<h3 id="arguments">Arguments</h3>
+<p>The two required inputs are a reference element and new element to compare.
+Although &quot;element&quot; is used, the actual input can be of various input types
+all representing an element (or many elements).</p>
+<p><a name="create-tree"></a></p>
+<h2 id="createtree">createTree</h2>
+<p><strong><code>(nodeName, attributes, childNodes)</code></strong></p>
+<p>Replaces the contents of a DOM node with the passed in markup, only updates
+what has changed.</p>
+<p>Example:</p>
+<pre><code class="lang-js">outerHTML(document.body, &#39;Hello world&#39;);
+</code></pre>
+<p>To see how to run this example yourself see the <a href="#examples">Examples</a> section
+below.</p>
+<h3 id="arguments">Arguments</h3>
+<p>The two required inputs are a reference element and new element to compare.
+Although &quot;element&quot; is used, the actual input can be of various input types
+all representing an element (or many elements).</p>
+<p><a name="release"></a></p>
 <p><a name="release"></a></p>
 <h2 id="release-domnode-">release (domNode)</h2>
 <h3 id="purpose">Purpose</h3>
@@ -309,8 +384,7 @@ from the globally exported <code>diff</code> object. Remember to wrap your code 
       </layer>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-      <script src="/node_modules/diffhtml/dist/diffhtml.js"></script>
-      <script src="/node_modules/diffhtml-components/dist/web-component.js"></script>
+      <script src="https://diffhtml.org/master/diffhtml/dist/diffhtml.js"></script>
       <script>
         hljs.initHighlightingOnLoad();
 

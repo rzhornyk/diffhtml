@@ -14,6 +14,22 @@ module.exports = ({ path, pages, content }) => html`
     <body>
       <layer id="navigation">
         <div class="open-menu">≡</div>
+
+        <p class="social">
+          <a class="github" href="https://github.com/tbranyen/diffhtml">
+            <i class="fa fa-github"></i>
+          </a>
+          <a class="stackoverflow" href="https://stackoverflow.com/search?q=diffhtml+javascript">
+            <i class="fa fa-stack-overflow"></i>
+          </a>
+          <a class="twitter" href="https://twitter.com/diffhtml">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a class="reddit" href="https://reddit.com/r/diffhtml">
+            <i class="fa fa-reddit"></i>
+          </a>
+        </p>
+
         <${Nav} pages=${pages} />
       </layer>
 
@@ -56,8 +72,7 @@ module.exports = ({ path, pages, content }) => html`
       </layer>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-      <script src="/node_modules/diffhtml/dist/diffhtml.js"></script>
-      <script src="/node_modules/diffhtml-components/dist/web-component.js"></script>
+      <script src="https://diffhtml.org/master/diffhtml/dist/diffhtml.js"></script>
       <script>
         hljs.initHighlightingOnLoad();
 

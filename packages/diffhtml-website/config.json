@@ -2,13 +2,12 @@
   "output_dir": "../../docs",
   "pages": {
     "Getting Started": ["index.html", {
-      "Screencast": "#screencast",
       "About": "#about",
-      "Installing": "#installing",
-      "Accessing the API": "#accessing-the-api"
+      "Installing": "#installing"
     }],
 
     "API": ["api.html", {
+      "Accessing the API": "#accessing-the-api",
       "innerHTML": "#inner-html",
       "outerHTML": "#outer-html",
       "html": "#html",
@@ -27,19 +26,20 @@
       "textChanged": "#textChanged"
     }],
 
+    "Middleware": ["middleware.html", {
+      "Logger": "#logger",
+      "Inline Transitions": "#inline-transitions",
+      "Synthetic Events": "#synthetic-events",
+      "Service Worker": "#service-worker",
+      "Verify State": "#verify-state"
+    }],
+
     "Components": ["components.html", {
       "Overview": "#overview",
       "Component": "#component",
       "Web Component": "#web-component",
       "JSX": "#jsx",
       "React Compatibility": "#react"
-    }],
-
-    "Middleware": ["middleware.html", {
-      "Logging": "#logging",
-      "Inline Transitions": "#inline-transitions",
-      "Synthetic Events": "#synthetic-events",
-      "Verify State": "#verify-state"
     }],
 
     "Tools": ["tools.html", {
