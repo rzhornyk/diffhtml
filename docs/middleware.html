@@ -7,15 +7,27 @@
     </head><body>
       <layer id="navigation">
         <div class="open-menu">≡</div>
+
+        <p class="social">
+          <a class="github" href="https://github.com/tbranyen/diffhtml">
+            <i class="fa fa-github"></i>
+          </a>
+          <a class="stackoverflow" href="https://stackoverflow.com/search?q=diffhtml+javascript">
+            <i class="fa fa-stack-overflow"></i>
+          </a>
+          <a class="twitter" href="https://twitter.com/diffhtml">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a class="reddit" href="https://reddit.com/r/diffhtml">
+            <i class="fa fa-reddit"></i>
+          </a>
+        </p>
+
         <ul>
     
       <a href="index.html"><li class="header"><h4>Getting Started</h4></li></a>
 
       
-    
-      
-
-      <a href="index.html#screencast"><li>Screencast</li></a>
     
       
 
@@ -25,13 +37,13 @@
 
       <a href="index.html#installing"><li>Installing</li></a>
     
-      
-
-      <a href="index.html#accessing-the-api"><li>Accessing the API</li></a>
-    
       <a href="api.html"><li class="header"><h4>API</h4></li></a>
 
       
+    
+      
+
+      <a href="api.html#accessing-the-api"><li>Accessing the API</li></a>
     
       
 
@@ -89,6 +101,30 @@
 
       <a href="transitions.html#textChanged"><li>textChanged</li></a>
     
+      <a href="middleware.html"><li class="header"><h4>Middleware</h4></li></a>
+
+      
+    
+      
+
+      <a href="middleware.html#logger"><li>Logger</li></a>
+    
+      
+
+      <a href="middleware.html#inline-transitions"><li>Inline Transitions</li></a>
+    
+      
+
+      <a href="middleware.html#synthetic-events"><li>Synthetic Events</li></a>
+    
+      
+
+      <a href="middleware.html#service-worker"><li>Service Worker</li></a>
+    
+      
+
+      <a href="middleware.html#verify-state"><li>Verify State</li></a>
+    
       <a href="components.html"><li class="header"><h4>Components</h4></li></a>
 
       
@@ -112,26 +148,6 @@
       
 
       <a href="components.html#react"><li>React Compatibility</li></a>
-    
-      <a href="middleware.html"><li class="header"><h4>Middleware</h4></li></a>
-
-      
-    
-      
-
-      <a href="middleware.html#logging"><li>Logging</li></a>
-    
-      
-
-      <a href="middleware.html#inline-transitions"><li>Inline Transitions</li></a>
-    
-      
-
-      <a href="middleware.html#synthetic-events"><li>Synthetic Events</li></a>
-    
-      
-
-      <a href="middleware.html#verify-state"><li>Verify State</li></a>
     
       <a href="tools.html"><li class="header"><h4>Tools</h4></li></a>
 
@@ -171,7 +187,21 @@
           </h1>
         </header>
 
-        <section id="content"></section>
+        <section id="content"><h1 id="middleware">Middleware</h1>
+<p>This concept allows developers to write plugins that augments diffHTML to do
+different things. You can use pre-made middleware or create your own easily.</p>
+<p><a href="#logger"></a></p>
+<h2 id="logger">Logger</h2>
+<p><img src="https://cloud.githubusercontent.com/assets/181635/23392088/32cacd8a-fd2e-11e6-9b95-e3124d827eea.png" width="100%"></img></p>
+<p><a href="#inline-transitions"></a></p>
+<h2 id="inline-transitions">Inline Transitions</h2>
+<p><a href="#synthetic-events"></a></p>
+<h2 id="synthetic-events">Synthetic Events</h2>
+<p><a href="#service-worker"></a></p>
+<h2 id="service-worker">Service Worker</h2>
+<p><a href="#verify-state"></a></p>
+<h2 id="verify-state">Verify State</h2>
+<p><img src="https://cloud.githubusercontent.com/assets/181635/23392650/1d7dfdcc-fd32-11e6-8f41-b412279cea55.png" width="100%"></img></p></section>
 
         <a href="https://github.com/tbranyen/diffhtml/edit/master/packages/diffhtml-website/pages/middleware.md" style="
             text-align: center;
@@ -196,8 +226,7 @@
       </layer>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-      <script src="/node_modules/diffhtml/dist/diffhtml.js"></script>
-      <script src="/node_modules/diffhtml-components/dist/web-component.js"></script>
+      <script src="https://diffhtml.org/master/diffhtml/dist/diffhtml.js"></script>
       <script>
         hljs.initHighlightingOnLoad();
 

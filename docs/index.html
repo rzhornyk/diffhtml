@@ -7,15 +7,27 @@
     </head><body>
       <layer id="navigation">
         <div class="open-menu">≡</div>
+
+        <p class="social">
+          <a class="github" href="https://github.com/tbranyen/diffhtml">
+            <i class="fa fa-github"></i>
+          </a>
+          <a class="stackoverflow" href="https://stackoverflow.com/search?q=diffhtml+javascript">
+            <i class="fa fa-stack-overflow"></i>
+          </a>
+          <a class="twitter" href="https://twitter.com/diffhtml">
+            <i class="fa fa-twitter"></i>
+          </a>
+          <a class="reddit" href="https://reddit.com/r/diffhtml">
+            <i class="fa fa-reddit"></i>
+          </a>
+        </p>
+
         <ul>
     
       <a href="index.html"><li class="header"><h4>Getting Started</h4></li></a>
 
       
-    
-      
-
-      <a href="index.html#screencast"><li>Screencast</li></a>
     
       
 
@@ -25,13 +37,13 @@
 
       <a href="index.html#installing"><li>Installing</li></a>
     
-      
-
-      <a href="index.html#accessing-the-api"><li>Accessing the API</li></a>
-    
       <a href="api.html"><li class="header"><h4>API</h4></li></a>
 
       
+    
+      
+
+      <a href="api.html#accessing-the-api"><li>Accessing the API</li></a>
     
       
 
@@ -89,6 +101,30 @@
 
       <a href="transitions.html#textChanged"><li>textChanged</li></a>
     
+      <a href="middleware.html"><li class="header"><h4>Middleware</h4></li></a>
+
+      
+    
+      
+
+      <a href="middleware.html#logger"><li>Logger</li></a>
+    
+      
+
+      <a href="middleware.html#inline-transitions"><li>Inline Transitions</li></a>
+    
+      
+
+      <a href="middleware.html#synthetic-events"><li>Synthetic Events</li></a>
+    
+      
+
+      <a href="middleware.html#service-worker"><li>Service Worker</li></a>
+    
+      
+
+      <a href="middleware.html#verify-state"><li>Verify State</li></a>
+    
       <a href="components.html"><li class="header"><h4>Components</h4></li></a>
 
       
@@ -112,26 +148,6 @@
       
 
       <a href="components.html#react"><li>React Compatibility</li></a>
-    
-      <a href="middleware.html"><li class="header"><h4>Middleware</h4></li></a>
-
-      
-    
-      
-
-      <a href="middleware.html#logging"><li>Logging</li></a>
-    
-      
-
-      <a href="middleware.html#inline-transitions"><li>Inline Transitions</li></a>
-    
-      
-
-      <a href="middleware.html#synthetic-events"><li>Synthetic Events</li></a>
-    
-      
-
-      <a href="middleware.html#verify-state"><li>Verify State</li></a>
     
       <a href="tools.html"><li class="header"><h4>Tools</h4></li></a>
 
@@ -171,45 +187,37 @@
           </h1>
         </header>
 
-        <section id="content"><div class="hero">
-  <p class="social">
-    <a class="github" href="https://github.com/tbranyen/diffhtml">
-      <i class="fa fa-github"></i>
-    </a>
-    <a class="stackoverflow" href="https://stackoverflow.com/search?q=diffhtml+javascript">
-      <i class="fa fa-stack-overflow"></i>
-    </a>
-    <a class="twitter" href="https://twitter.com/diffhtml">
-      <i class="fa fa-twitter"></i>
-    </a>
-    <a class="reddit" href="https://reddit.com/r/diffhtml">
-      <i class="fa fa-reddit"></i>
-    </a>
-  </p>
-
-  <div class="video-container">
-
-  </div>
-  
-</div>
-
-<h1 id="getting-started">Getting started</h1>
+        <section id="content"><h1 id="getting-started">Getting started</h1>
 <h2 id="about">About</h2>
-<p>The diffHTML project is a collection of modules that all depend on or work with
-the
-<a href="https://github.com/tbranyen/diffhtml/tree/master/packages/diffhtml">diffhtml</a>
-module. This module provides functions to allow writing declarative
-HTML that gets diffed through a Virtual DOM and patched into the real DOM.</p>
-<p><strong>Turns:</strong></p>
-<pre><code class="lang-javascript">const div = document.createElement(&#39;div&#39;);
+<p>diffHTML is a view library for creating reactive interfaces for the web. You
+would use it in the same way as tools like <a href="https://reactjs.org/">React</a> and
+<a href="https://vuejs.org/">Vue</a>, along with many others that assist with creative
+rich user interfaces.</p>
+<p>This tool is a logical progression from learning <code>innerHTML</code> on a page, you destroy all state and have no hooks
+into the changes that would occur between the states.  With diffHTML you get to
+write familiar declarative markup (HTML), use a simple core API (minimal
+learning required), and </p>
+<p>The diffHTML core library</p>
+<p><strong>turns:</strong></p>
+<pre><code class="lang-javascript">// Manually create container.
+const div = document.createElement(&#39;div&#39;);
 
+// Update the content using the `innerHTML` property.
 div.innerHTML = &#39;Hello world&#39;;
-docuent.body.appendChild(div);
-div.textContent = &#39;Hello world!&#39;;
+
+// Add into the page body.
+document.body.appendChild(div);
+
+// Update only the text.
+div.textContent = &#39;Hello updated world!&#39;;
 </code></pre>
-<p><strong>Into:</strong></p>
-<pre><code class="lang-javascript">diff.innerHTML(document.body, &#39;&lt;div&gt;Hello world&lt;/div&gt;&#39;);
-diff.innerHTML(document.body, &#39;&lt;div&gt;Hello world!&lt;/div&gt;&#39;);
+<p><strong>into:</strong></p>
+<pre><code class="lang-javascript">// Declaratively create a DIV with the content and append into the page body.
+diff.innerHTML(document.body, &#39;&lt;div&gt;Hello world&lt;/div&gt;&#39;);
+
+// Represent how you want the body to look and diffHTML will update only the
+// changed text.
+diff.innerHTML(document.body, &#39;&lt;div&gt;Hello updated world!&lt;/div&gt;&#39;);
 </code></pre>
 <p>Unlike React, the core engine of diffHTML was designed with the browser in mind
 first so includes the DOM rendering engine. This makes diffHTML suitable for
@@ -239,28 +247,7 @@ needing a build step.</p>
 </code></pre>
 </li>
 </ul>
-<p><em>While <code>diffhtml</code> is the core package to install, there are many other modules you may also want to install depending on your use cases.</em></p>
-<h2 id="accessing-the-api">Accessing the API</h2>
-<ul>
-<li><p>Browser:</p>
-<pre><code class="lang-xml">&lt;script src=&quot;node_modules/diffhtml/dist/diffhtml.js&quot;&gt;&lt;/script&gt;
-</code></pre>
-<pre><code class="lang-javascript">diff.innerHTML(document.body, &#39;Hello world!&#39;)
-</code></pre>
-</li>
-<li><p>ES Modules:</p>
-<pre><code class="lang-javascript">import { innerHTML } from &#39;diffhtml&#39;
-
-innerHTML(document.body, &#39;Hello world!&#39;)
-</code></pre>
-</li>
-<li><p>Node:</p>
-<pre><code class="lang-javascript">const { innerHTML } = require(&#39;diffhtml&#39;)
-
-innerHTML(document.body, &#39;Hello world!&#39;)
-</code></pre>
-</li>
-</ul></section>
+<p><em>While <code>diffhtml</code> is the core package to install, there are many other modules you may also want to install depending on your use cases.</em></p></section>
 
         <a href="https://github.com/tbranyen/diffhtml/edit/master/packages/diffhtml-website/pages/index.md" style="
             text-align: center;
@@ -285,8 +272,7 @@ innerHTML(document.body, &#39;Hello world!&#39;)
       </layer>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
-      <script src="/node_modules/diffhtml/dist/diffhtml.js"></script>
-      <script src="/node_modules/diffhtml-components/dist/web-component.js"></script>
+      <script src="https://diffhtml.org/master/diffhtml/dist/diffhtml.js"></script>
       <script>
         hljs.initHighlightingOnLoad();
 

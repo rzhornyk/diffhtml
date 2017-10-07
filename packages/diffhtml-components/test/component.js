@@ -138,65 +138,6 @@ describe('Component implementation', function() {
       ok(wasCalled);
     });
 
-    it('can update with setState', () => {
-      let wasCalled = false;
-      let counter = 0;
-
-      class CustomComponent extends Component {
-        render() {
-          const { message } = this.state;
-          return html`${message}`;
-        }
-
-        constructor(props) {
-          counter++;
-          super(props);
-          this.state.message = 'default';
-        }
-
-        shouldComponentUpdate() {
-          wasCalled = true;
-          return true;
-        }
-      }
-
-      let ref = null;
-      innerHTML(this.fixture, html`<${CustomComponent} ref=${node => (ref = node)} />`);
-      equal(this.fixture.innerHTML, 'default');
-      ref.setState({ message: 'something' });
-      equal(this.fixture.innerHTML, 'something');
-      ok(wasCalled);
-      equal(counter, 1);
-    });
-
-    it.skip('can update multiple top level with setState', () => {
-      class CustomComponent extends Component {
-        render() {
-          const { count } = this.state;
-
-          return html`${Array(count).fill(null).map((nul, i) => html`
-            <div>${String(i)}</div>
-          `)}`;
-        }
-
-        constructor(props) {
-          super(props);
-          this.state.count = 2;
-        }
-      }
-
-      let ref = null;
-
-      innerHTML(this.fixture, html`<${CustomComponent} ref=${node => (ref = node)} />`);
-      const { firstChild } = this.fixture;
-      equal(this.fixture.innerHTML.trim(), '<div>0</div><div>1</div>');
-      ref.setState({ count: 3 });
-      equal(this.fixture.innerHTML.trim(), '<div>0</div><div>1</div><div>2</div>');
-      ref.setState({ count: 1 });
-      equal(this.fixture.innerHTML.trim(), '<div>0</div>');
-      equal(this.fixture.firstChild, firstChild);
-    });
-
     it('can block rendering with shouldComponentUpdate', () => {
       let wasCalled = false;
       let counter = 0;
@@ -475,6 +416,65 @@ describe('Component implementation', function() {
       equal(this.fixture.innerHTML, 'default');
       ref.setState({ message: 'something' });
       equal(this.fixture.innerHTML, 'something');
+    });
+
+    it('can update with setState', () => {
+      let wasCalled = false;
+      let counter = 0;
+
+      class CustomComponent extends Component {
+        render() {
+          const { message } = this.state;
+          return html`${message}`;
+        }
+
+        constructor(props) {
+          counter++;
+          super(props);
+          this.state.message = 'default';
+        }
+
+        shouldComponentUpdate() {
+          wasCalled = true;
+          return true;
+        }
+      }
+
+      let ref = null;
+      innerHTML(this.fixture, html`<${CustomComponent} ref=${node => (ref = node)} />`);
+      equal(this.fixture.innerHTML, 'default');
+      ref.setState({ message: 'something' });
+      equal(this.fixture.innerHTML, 'something');
+      ok(wasCalled);
+      equal(counter, 1);
+    });
+
+    it.only('can update multiple top level elements with setState', () => {
+      class CustomComponent extends Component {
+        render() {
+          const { count } = this.state;
+
+          return html`${[...Array(count)].map((__unused, i) => html`
+            <div>${String(i)}</div>
+          `)}`;
+        }
+
+        constructor(props) {
+          super(props);
+          this.state.count = 2;
+        }
+      }
+
+      let ref = null;
+
+      innerHTML(this.fixture, html`<${CustomComponent} ref=${node => (ref = node)} />`);
+      const { firstChild } = this.fixture;
+      equal(this.fixture.innerHTML.trim(), '<div>0</div><div>1</div>');
+      ref.setState({ count: 3 });
+      equal(this.fixture.innerHTML.trim(), '<div>0</div><div>1</div><div>2</div>');
+      ref.setState({ count: 1 });
+      equal(this.fixture.innerHTML.trim(), '<div>0</div>');
+      equal(this.fixture.firstChild, firstChild);
     });
   });
 
