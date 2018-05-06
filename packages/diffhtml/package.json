@@ -34,15 +34,15 @@
     "test-debug": "NODE_ENV=test mocha --inspect --debug-brk test/_setup test test/integration/*.js"
   },
   "devDependencies": {
-    "babel-cli": "^6.23.0",
-    "babel-plugin-istanbul": "^4.0.0",
+    "babel-cli": "^6.26.0",
+    "babel-plugin-istanbul": "^4.1.6",
     "babel-preset-diffhtml-imports": "^1.0.0-beta.9",
-    "babel-register": "^6.23.0",
-    "coveralls": "^2.11.16",
-    "jsdom": "^9.10.0",
-    "jshint": "^2.9.4",
-    "mocha": "^3.5.3",
-    "nyc": "^10.1.2",
+    "babel-register": "^6.26.0",
+    "coveralls": "^3.0.0",
+    "jsdom": "^11.8.0",
+    "jshint": "^2.9.5",
+    "mocha": "^5.1.1",
+    "nyc": "^11.7.1",
     "rollup": "^0.41.4",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-hypothetical": "^1.2.1",
@@ -50,7 +50,7 @@
     "rollup-plugin-replace": "^1.1.1",
     "rollup-plugin-visualizer": "^0.2.0",
     "rollup-watch": "^3.2.2",
-    "sinon": "^1.17.7"
+    "sinon": "^4.5.0"
   },
   "nyc": {
     "require": [
