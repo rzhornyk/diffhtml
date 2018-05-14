@@ -2,19 +2,16 @@
 
 ## About
 
-diffHTML is a view library for creating reactive interfaces for the web. You
+diffHTML is a view library used to create reactive interfaces on the web. You
 would use it in the same way as tools like [React](https://reactjs.org/) and
 [Vue](https://vuejs.org/), along with many others that assist with creative
 rich user interfaces.
 
-This tool is a logical progression from learning `innerHTML` on a page, you destroy all state and have no hooks
-into the changes that would occur between the states.  With diffHTML you get to
-write familiar declarative markup (HTML), use a simple core API (minimal
-learning required), and 
+Unlike raw imperative DOM APIs, diffHTML offers a declarative approach which
+allows for easily modifying DOM state. This is demonstrated below showing a
+basic _Hello world_ example.
 
-The diffHTML core library
-
-**turns:**
+**Imperative (Native APIs):**
 
 ``` javascript
 // Manually create container.
@@ -30,16 +27,23 @@ document.body.appendChild(div);
 div.textContent = 'Hello updated world!';
 ```
 
-**into:**
+**Declarative (Using diffHTML):**
 
 ``` javascript
 // Declaratively create a DIV with the content and append into the page body.
 diff.innerHTML(document.body, '<div>Hello world</div>');
 
-// Represent how you want the body to look and diffHTML will update only the
-// changed text.
+// diffHTML will diff the changes and detect it only needs to update text.
 diff.innerHTML(document.body, '<div>Hello updated world!</div>');
 ```
+
+**Q:** But what if we modify the DOM manually, won't this throw off the
+comparator engine?
+
+**A:** The engine is smart and compares the node before every operation and
+snapshots after every operation to ensure the node has not been modified. If the
+node has, the engine calculates an updated version of the tree.
+
 
 Unlike React, the core engine of diffHTML was designed with the browser in mind
 first so includes the DOM rendering engine. This makes diffHTML suitable for
@@ -54,7 +58,9 @@ needing a build step.
 
 ## Installing
 
-We encourage brand new developers who want to try diffHTML to use our pre-made Glitch examples. This will let you mess with the API without having to download or configure anything.
+We encourage brand new developers who want to try diffHTML to use our pre-made
+Glitch examples. This will let you mess with the API without having to download
+or configure anything.
 
 * CDN (Recommended for Beginners):
 
