@@ -60,7 +60,7 @@ export default function handleTaggedTemplate(strings, ...values) {
       const isTag = Boolean(lastCharacter.match(isTagEx));
       const isString = typeof value === 'string';
       const isObject = typeof value === 'object';
-      const isArray = isArray(value);
+      const isArrayType = isArray(value);
       const token = `${TOKEN}${i}__`;
 
       // Injected as a tag.
@@ -74,7 +74,7 @@ export default function handleTaggedTemplate(strings, ...values) {
         HTML += token;
       }
       // Injected as a child node.
-      else if (isArray || isObject) {
+      else if (isArrayType || isObject) {
         supplemental.children[i] = createTree(value);
         HTML += token;
       }
