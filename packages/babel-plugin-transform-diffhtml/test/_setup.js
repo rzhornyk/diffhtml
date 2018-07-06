@@ -1,7 +1,6 @@
-import { jsdom } from 'jsdom';
+import { JSDOM } from 'jsdom';
 
-const instance = jsdom();
-const { defaultView } = instance;
+const defaultView = new JSDOM().window;
 
 Object.assign(global, {
   document: defaultView.document,
