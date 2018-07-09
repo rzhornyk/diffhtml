@@ -7,7 +7,7 @@ html, body {
   margin: 0 auto;
   display: flex;
   font-family: Lato, Arial, Helvetica, sans-serif;
-  background: linear-gradient(to right, #333 50%, #F3F3F3 50%, #F3F3F3 100%);
+  background: linear-gradient(to right, #333 calc(50% - 340px), #F3F3F3 calc(50% - 340px), #F3F3F3 100%);
 }
 
 body {
@@ -89,7 +89,7 @@ layer#navigation ul {
   padding: 0;
   list-style: none;
   line-height: 30px;
-  padding-top: 86px;
+  padding-top: 91px;
   padding-left: 10px;
   width: 200px;
 }
@@ -143,12 +143,15 @@ layer#main section h1 {
   color: #333;
   margin: 0;
   margin-bottom: 30px;
-  text-decoration: underline;
 }
 
 layer#main h2 {
   color: #525253;
   font-size: 24px;
+  padding: 10px;
+  padding-left: 0;
+  border-bottom: 3px solid #4e4e4e;
+  margin-top: 50px;
 }
 
 layer#main header h1 {
@@ -202,6 +205,22 @@ layer#main footer a:hover {
   display: none;
 }
 
+p.name {
+  font-family: 'Josefin Slab', serif;
+  font-size: 40px;
+  font-weight: 400;
+  padding-top: 5px;
+  letter-spacing: 2px;
+}
+
+/*
+@media only screen and (max-width : 1250px) {
+  html, body {
+    background: linear-gradient(to right, #333 270px, #F3F3F3 270px, #F3F3F3 100%);
+  }
+}
+*/
+
 @media only screen and (max-width : 1027px) {
   html, body {
     background-color: #FFF;
@@ -211,9 +230,11 @@ layer#main footer a:hover {
     margin-left: 0px;
   }
 
+  /*
   body.open {
     background: linear-gradient(to right, #333 248px, #F3F3F3 248px, #F3F3F3 100%);
   }
+  */
 
   nav {
     display: block;
@@ -240,8 +261,8 @@ layer#main footer a:hover {
   }
 
   layer#main {
-    max-width: calc(100% - 245px);
-    width: calc(100% - 245px);
+    max-width: 100%;
+    width: 100%;
     margin: 0 !important;
     padding-left: 0px !important;
     padding-right: 15px !important;
@@ -309,7 +330,7 @@ layer#main footer a:hover {
     width: 100%;
     max-width: 100%;
     text-align: left;
-    padding-left: 15px;
+    padding-left: 20px;
   }
 
   body.open .open-menu {
@@ -361,14 +382,6 @@ layer#main footer a:hover {
     text-align: left;
     padding-left: 5px;
   }
-}
-
-p.name {
-  font-family: 'Josefin Slab', serif;
-  font-size: 40px;
-  font-weight: 400;
-  padding-top: 5px;
-  letter-spacing: 2px;
 }
 
 @media only screen and (max-width : 720px) {

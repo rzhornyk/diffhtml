@@ -3,7 +3,8 @@
   "pages": {
     "Getting Started": ["index.html", {
       "About": "#about",
-      "Installing": "#installing"
+      "Installing": "#installing",
+      "Glitch Examples": "#glitch-examples"
     }],
 
     "API": ["api.html", {
@@ -15,7 +16,8 @@
       "addTransitionState": "#add-transition-state",
       "removeTransitionState": "#remove-transition-state",
       "createTree": "#create-tree",
-      "release": "#release"
+      "release": "#release",
+      "Internals": "#internals"
     }],
 
     "Transitions": ["transitions.html", {
@@ -46,10 +48,6 @@
       "Babel Transform": "#babel-transform",
       "Live Reload Server": "#static-sync",
       "Render to String": "#render-to-string"
-    }],
-
-    "Examples": ["examples.html", {
-      "TodoMVC": "#todomvc"
     }]
   }
 }

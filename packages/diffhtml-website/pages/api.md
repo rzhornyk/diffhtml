@@ -2,10 +2,10 @@
 
 While the core API has been designed to be minimalist, it was done so in an
 extensible and revealing way. New users can jump right in and start creating,
-while experienced developers wanting more can dip into the internals for more
-flexibility.
+while experienced developers requiring more can access the internals and write
+their own middleware.
 
-<a href="#accessing-the-api" />
+<a href="#accessing-the-api"></a>
 
 ## Accessing the API
 
@@ -15,13 +15,13 @@ access the API.
 ### Global
 
 This method of accessing diffHTML is good for new users. You can load it
-directly from the diffHTML website with a script tag:
+securely from the diffHTML website with a script tag:
 
 ``` html
 <script src="https://diffhtml.org/master/diffhtml/dist/diffhtml.min.js"></script>
 ```
 
-You could then access the API in your own scripts by using the global `diff`
+You can now access the API in your own scripts by using the global `diff`
 object.
 
 ``` js
@@ -29,15 +29,12 @@ diff.innerHTML(document.body, 'Hello world');
 diff.outerHTML(document.body, diff.html`<body>Hello world</body>`);
 ```
 
-Although you can also short-hand them (being careful not to expose them as
-global variables):
+Although you can also short-hand them in your code, which is an ES6 feature
+heavily used in examples with diffHTML.
 
 ``` js
-// This creates what is called a block, `const / let` are scoped automatically.
-{
-  // These variables are destructured out of the `diff` object.
-  const { innerHTML, outerHTML } = diff;
-}
+// These variables are destructured out of the `diff` object.
+const { innerHTML, outerHTML } = diff;
 ```
 
 ### Module (Recommended usage)
@@ -58,7 +55,7 @@ const { innerHTML } = require('diffhtml/dist/cjs/index');
 const innerHTML = require('diffhtml/dist/cjs/inner-html');
 ```
 
-For ES6:
+For ESM:
 
 ``` js
 import { innerHTML } from 'diffhtml';

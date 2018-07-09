@@ -2,67 +2,26 @@
 
 ## About
 
-diffHTML is a view library used to create reactive interfaces on the web. You
-would use it in the same way as tools like [React](https://reactjs.org/) and
-[Vue](https://vuejs.org/), along with many others that assist with creative
-rich user interfaces.
-
-Unlike raw imperative DOM APIs, diffHTML offers a declarative approach which
-allows for easily modifying DOM state. This is demonstrated below showing a
-basic _Hello world_ example.
-
-**Imperative (Native APIs):**
-
-``` javascript
-// Manually create container.
-const div = document.createElement('div');
-
-// Update the content using the `innerHTML` property.
-div.innerHTML = 'Hello world';
-
-// Add into the page body.
-document.body.appendChild(div);
-
-// Update only the text.
-div.textContent = 'Hello updated world!';
-```
-
-**Declarative (Using diffHTML):**
-
-``` javascript
-// Declaratively create a DIV with the content and append into the page body.
-diff.innerHTML(document.body, '<div>Hello world</div>');
-
-// diffHTML will diff the changes and detect it only needs to update text.
-diff.innerHTML(document.body, '<div>Hello updated world!</div>');
-```
-
-**Q:** But what if we modify the DOM manually, won't this throw off the
-comparator engine?
-
-**A:** The engine is smart and compares the node before every operation and
-snapshots after every operation to ensure the node has not been modified. If the
-node has, the engine calculates an updated version of the tree.
-
-
-Unlike React, the core engine of diffHTML was designed with the browser in mind
-first so includes the DOM rendering engine. This makes diffHTML suitable for
-web applications with a single package.
-
-The core of diffHTML is a powerful and easy-to-use virtual dom library that can
-help devs get from the basics to something like React. Being designed to be
-flexible and allow graceful. Use HTML or JSX, they both get normalized to the
-same DOM tree. You can diff plain HTML strings, or get fancy with a tagged
-template handler that will allow you to get React-like capabilities without
-needing a build step.
+diffHTML is a library that helps render reactive views on the web. It is very
+similar in scope to [React](https://reactjs.org/), [Choo](https://choo.io/),
+and [Vue](https://vuejs.org), along with many others that assist with creating
+dynamic and declarative user interfaces. You can use it to make games, data
+visualizations, web applications, or any other kind of reactive user interface.
+The API is designed to be revealing and only discoverable once you need the
+particular feature. This makes it very welcoming to new and intermediate web
+developers.
 
 ## Installing
 
 We encourage brand new developers who want to try diffHTML to use our pre-made
 Glitch examples. This will let you mess with the API without having to download
-or configure anything.
+or configure anything on your own.
 
-* CDN (Recommended for Beginners):
+If you would like to use it on your own, you may want to use the HTTPS, npm, or
+yarn approach. Reference the [API Access documentation](/api#accessing-the-api
+a) for more information on using one of the techniques below.
+
+* **HTTPS**
 
   ```
   <script src="https://diffhtml.org/master/diffhtml/dist/diffhtml.js"></script>
@@ -83,4 +42,16 @@ or configure anything.
   yarn add diffhtml
   ```
 
-_While `diffhtml` is the core package to install, there are many other modules you may also want to install depending on your use cases._
+## Glitch Examples
+
+[Glitch](https://glitch.com) is a fantastic site that allows you to create full
+applications and demos and get version control/hosting out-of-the-box. It is
+ideally suited for tutorials as it allows users to ask questions and interact
+with the code by forking/"remixing".
+
+Each one of the following examples contains source code to run the example,
+usually not commented unless something is expecially complicated in the source
+code. The code is then dissected and commented in the README which you can
+follow to learn how the example is created.
+
+- **[Minimalist Clock](https://diffhtml-clock.glitch.me)** - [Tutorial/README](https://glitch.com/edit/#!/diffhtml-clock?path=README.md:1:0)

@@ -43,6 +43,10 @@
 
       <a href="index.html#installing"><li>Installing</li></a>
     
+      
+
+      <a href="index.html#glitch-examples"><li>Glitch Examples</li></a>
+    
       <a href="api.html"><li class="header"><h4>API</h4></li></a>
 
       
@@ -82,6 +86,10 @@
       
 
       <a href="api.html#release"><li>release</li></a>
+    
+      
+
+      <a href="api.html#internals"><li>Internals</li></a>
     
       <a href="transitions.html"><li class="header"><h4>Transitions</h4></li></a>
 
@@ -171,14 +179,6 @@
 
       <a href="tools.html#render-to-string"><li>Render to String</li></a>
     
-      <a href="examples.html"><li class="header"><h4>Examples</h4></li></a>
-
-      
-    
-      
-
-      <a href="examples.html#todomvc"><li>TodoMVC</li></a>
-    
   </ul>
       </layer>
 
@@ -195,53 +195,23 @@
 
         <section id="content"><h1 id="getting-started">Getting started</h1>
 <h2 id="about">About</h2>
-<p>diffHTML is a view library used to create reactive interfaces on the web. You
-would use it in the same way as tools like <a href="https://reactjs.org/">React</a> and
-<a href="https://vuejs.org/">Vue</a>, along with many others that assist with creative
-rich user interfaces.</p>
-<p>Unlike raw imperative DOM APIs, diffHTML offers a declarative approach which
-allows for easily modifying DOM state. This is demonstrated below showing a
-basic <em>Hello world</em> example.</p>
-<p><strong>Imperative (Native APIs):</strong></p>
-<pre><code class="lang-javascript">// Manually create container.
-const div = document.createElement(&#39;div&#39;);
-
-// Update the content using the `innerHTML` property.
-div.innerHTML = &#39;Hello world&#39;;
-
-// Add into the page body.
-document.body.appendChild(div);
-
-// Update only the text.
-div.textContent = &#39;Hello updated world!&#39;;
-</code></pre>
-<p><strong>Declarative (Using diffHTML):</strong></p>
-<pre><code class="lang-javascript">// Declaratively create a DIV with the content and append into the page body.
-diff.innerHTML(document.body, &#39;&lt;div&gt;Hello world&lt;/div&gt;&#39;);
-
-// diffHTML will diff the changes and detect it only needs to update text.
-diff.innerHTML(document.body, &#39;&lt;div&gt;Hello updated world!&lt;/div&gt;&#39;);
-</code></pre>
-<p><strong>Q:</strong> But what if we modify the DOM manually, won&#39;t this throw off the
-comparator engine?</p>
-<p><strong>A:</strong> The engine is smart and compares the node before every operation and
-snapshots after every operation to ensure the node has not been modified. If the
-node has, the engine calculates an updated version of the tree.</p>
-<p>Unlike React, the core engine of diffHTML was designed with the browser in mind
-first so includes the DOM rendering engine. This makes diffHTML suitable for
-web applications with a single package.</p>
-<p>The core of diffHTML is a powerful and easy-to-use virtual dom library that can
-help devs get from the basics to something like React. Being designed to be
-flexible and allow graceful. Use HTML or JSX, they both get normalized to the
-same DOM tree. You can diff plain HTML strings, or get fancy with a tagged
-template handler that will allow you to get React-like capabilities without
-needing a build step.</p>
+<p>diffHTML is a library that helps render reactive views on the web. It is very
+similar in scope to <a href="https://reactjs.org/">React</a>, <a href="https://choo.io/">Choo</a>,
+and <a href="https://vuejs.org">Vue</a>, along with many others that assist with creating
+dynamic and declarative user interfaces. You can use it to make games, data
+visualizations, web applications, or any other kind of reactive user interface.
+The API is designed to be revealing and only discoverable once you need the
+particular feature. This makes it very welcoming to new and intermediate web
+developers.</p>
 <h2 id="installing">Installing</h2>
 <p>We encourage brand new developers who want to try diffHTML to use our pre-made
 Glitch examples. This will let you mess with the API without having to download
-or configure anything.</p>
+or configure anything on your own.</p>
+<p>If you would like to use it on your own, you may want to use the HTTPS, npm, or
+yarn approach. Reference the <a href="/api#accessing-the-api
+a">API Access documentation</a> for more information on using one of the techniques below.</p>
 <ul>
-<li><p>CDN (Recommended for Beginners):</p>
+<li><p><strong>HTTPS</strong></p>
 <pre><code>&lt;script src=&quot;https://diffhtml.org/master/diffhtml/dist/diffhtml.js&quot;&gt;&lt;/script&gt;
 </code></pre></li>
 <li><svg viewBox="0 0 18 7" width="40" style="position: relative; top: 2px;">
@@ -257,7 +227,18 @@ or configure anything.</p>
 </code></pre>
 </li>
 </ul>
-<p><em>While <code>diffhtml</code> is the core package to install, there are many other modules you may also want to install depending on your use cases.</em></p></section>
+<h2 id="glitch-examples">Glitch Examples</h2>
+<p><a href="https://glitch.com">Glitch</a> is a fantastic site that allows you to create full
+applications and demos and get version control/hosting out-of-the-box. It is
+ideally suited for tutorials as it allows users to ask questions and interact
+with the code by forking/&quot;remixing&quot;.</p>
+<p>Each one of the following examples contains source code to run the example,
+usually not commented unless something is expecially complicated in the source
+code. The code is then dissected and commented in the README which you can
+follow to learn how the example is created.</p>
+<ul>
+<li><strong><a href="https://diffhtml-clock.glitch.me">Minimalist Clock</a></strong> - <a href="https://glitch.com/edit/#!/diffhtml-clock?path=README.md:1:0">Tutorial/README</a></li>
+</ul></section>
 
         <a href="https://github.com/tbranyen/diffhtml/edit/master/packages/diffhtml-website/pages/index.md" style="
             text-align: center;
@@ -272,12 +253,12 @@ or configure anything.</p>
         </a>
 
         <footer>
-          Built with
-          <span class="fa fa-heart" style="color: red; margin: 0 15px;"></span>
           <a href="https://twitter.com/tbranyen" style="text-decoration: none;">
-            <strong>by @tbranyen</strong></a>
-            <span style="margin-left: 15px;"> | </span>
-            <a style="margin-left: 15px; text-decoration: none;" href="https://raw.githubusercontent.com/tbranyen/diffhtml/master/LICENSE"> MIT License</a>
+            Built with <span class="fa fa-heart" style="color: red; padding: 5px;"></span>
+          </a>
+
+          <span style="margin-left: 15px;"> | </span>
+          <a style="margin-left: 15px; text-decoration: none;" href="https://raw.githubusercontent.com/tbranyen/diffhtml/master/LICENSE"> MIT License</a>
         </footer>
       </layer>
 

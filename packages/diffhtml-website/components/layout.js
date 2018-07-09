@@ -65,12 +65,12 @@ module.exports = ({ path, pages, content }) => html`
         </a>
 
         <footer>
-          Built with
-          <span class="fa fa-heart" style="color: red; margin: 0 15px;"></span>
           <a href="https://twitter.com/tbranyen" style="text-decoration: none;">
-            <strong>by @tbranyen</strong></a>
-            <span style="margin-left: 15px;"> | </span>
-            <a style="margin-left: 15px; text-decoration: none;" href="https://raw.githubusercontent.com/tbranyen/diffhtml/master/LICENSE"> MIT License</a>
+            Built with <span class="fa fa-heart" style="color: red; padding: 5px;"></span>
+          </a>
+
+          <span style="margin-left: 15px;"> | </span>
+          <a style="margin-left: 15px; text-decoration: none;" href="https://raw.githubusercontent.com/tbranyen/diffhtml/master/LICENSE"> MIT License</a>
         </footer>
       </layer>
 

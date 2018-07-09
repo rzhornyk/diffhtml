@@ -43,6 +43,10 @@
 
       <a href="index.html#installing"><li>Installing</li></a>
     
+      
+
+      <a href="index.html#glitch-examples"><li>Glitch Examples</li></a>
+    
       <a href="api.html"><li class="header"><h4>API</h4></li></a>
 
       
@@ -82,6 +86,10 @@
       
 
       <a href="api.html#release"><li>release</li></a>
+    
+      
+
+      <a href="api.html#internals"><li>Internals</li></a>
     
       <a href="transitions.html"><li class="header"><h4>Transitions</h4></li></a>
 
@@ -171,14 +179,6 @@
 
       <a href="tools.html#render-to-string"><li>Render to String</li></a>
     
-      <a href="examples.html"><li class="header"><h4>Examples</h4></li></a>
-
-      
-    
-      
-
-      <a href="examples.html#todomvc"><li>TodoMVC</li></a>
-    
   </ul>
       </layer>
 
@@ -196,29 +196,26 @@
         <section id="content"><h1 id="api">API</h1>
 <p>While the core API has been designed to be minimalist, it was done so in an
 extensible and revealing way. New users can jump right in and start creating,
-while experienced developers wanting more can dip into the internals for more
-flexibility.</p>
+while experienced developers requiring more can access the internals and write
+their own middleware.</p>
 <p><a href="#accessing-the-api"></a></p>
 <h2 id="accessing-the-api">Accessing the API</h2>
 <p>Depending on how you have configured diffHTML, there are multiple ways to
 access the API.</p>
 <h3 id="global">Global</h3>
 <p>This method of accessing diffHTML is good for new users. You can load it
-directly from the diffHTML website with a script tag:</p>
+securely from the diffHTML website with a script tag:</p>
 <pre><code class="lang-html">&lt;script src=&quot;https://diffhtml.org/master/diffhtml/dist/diffhtml.min.js&quot;&gt;&lt;/script&gt;
 </code></pre>
-<p>You could then access the API in your own scripts by using the global <code>diff</code>
+<p>You can now access the API in your own scripts by using the global <code>diff</code>
 object.</p>
 <pre><code class="lang-js">diff.innerHTML(document.body, &#39;Hello world&#39;);
 diff.outerHTML(document.body, diff.html`&lt;body&gt;Hello world&lt;/body&gt;`);
 </code></pre>
-<p>Although you can also short-hand them (being careful not to expose them as
-global variables):</p>
-<pre><code class="lang-js">// This creates what is called a block, `const / let` are scoped automatically.
-{
-  // These variables are destructured out of the `diff` object.
-  const { innerHTML, outerHTML } = diff;
-}
+<p>Although you can also short-hand them in your code, which is an ES6 feature
+heavily used in examples with diffHTML.</p>
+<pre><code class="lang-js">// These variables are destructured out of the `diff` object.
+const { innerHTML, outerHTML } = diff;
 </code></pre>
 <h3 id="module-recommended-usage-">Module (Recommended usage)</h3>
 <p>diffHTML can be loaded in either CommonJS or ES6 module environments. You can
@@ -233,7 +230,7 @@ const { innerHTML } = require(&#39;diffhtml/dist/cjs/index&#39;);
 // Importing only a specific method.
 const innerHTML = require(&#39;diffhtml/dist/cjs/inner-html&#39;);
 </code></pre>
-<p>For ES6:</p>
+<p>For ESM:</p>
 <pre><code class="lang-js">import { innerHTML } from &#39;diffhtml&#39;;
 </code></pre>
 <p><a name="inner-html"></a></p>
@@ -380,12 +377,12 @@ from the globally exported <code>diff</code> object. Remember to wrap your code 
         </a>
 
         <footer>
-          Built with
-          <span class="fa fa-heart" style="color: red; margin: 0 15px;"></span>
           <a href="https://twitter.com/tbranyen" style="text-decoration: none;">
-            <strong>by @tbranyen</strong></a>
-            <span style="margin-left: 15px;"> | </span>
-            <a style="margin-left: 15px; text-decoration: none;" href="https://raw.githubusercontent.com/tbranyen/diffhtml/master/LICENSE"> MIT License</a>
+            Built with <span class="fa fa-heart" style="color: red; padding: 5px;"></span>
+          </a>
+
+          <span style="margin-left: 15px;"> | </span>
+          <a style="margin-left: 15px; text-decoration: none;" href="https://raw.githubusercontent.com/tbranyen/diffhtml/master/LICENSE"> MIT License</a>
         </footer>
       </layer>
 
