@@ -1375,7 +1375,7 @@ describe('Util', function() {
       const div = document.createElement('div');
       const vTree = createTree(div);
 
-      location.href = 'about:blank?diff_perf';
+      location.href = 'about:blank?diff_collectmetrics';
 
       const measure = makeMeasure(div, vTree);
 
@@ -1387,7 +1387,7 @@ describe('Util', function() {
       const div = document.createElement('div');
       const vTree = createTree(div);
 
-      location.href = 'about:blank?diff_perf';
+      location.href = 'about:blank?diff_collectmetrics';
 
       const measure = makeMeasure(div, vTree);
 
@@ -1401,7 +1401,7 @@ describe('Util', function() {
       const div = document.createElement('div');
       const vTree = createTree(div);
 
-      location.href = 'about:blank?diff_perf';
+      location.href = 'about:blank?diff_collectmetrics';
 
       const measure = makeMeasure(div, vTree);
 
@@ -1425,7 +1425,7 @@ describe('Util', function() {
       /** @type {any} */ (div).host = { constructor: { name: 'Component' } };
       const vTree = createTree(div);
 
-      location.href = 'about:blank?diff_perf';
+      location.href = 'about:blank?diff_collectmetrics';
 
       const measure = makeMeasure(div, vTree);
 
@@ -1449,7 +1449,7 @@ describe('Util', function() {
       const div = document.createElement('div');
       const vTree = createTree(Component);
 
-      location.href = 'about:blank?diff_perf';
+      location.href = 'about:blank?diff_collectmetrics';
 
       const measure = makeMeasure(div, vTree);
 
