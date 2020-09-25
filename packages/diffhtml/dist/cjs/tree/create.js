@@ -1,0 +1,261 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = createTree;
+
+var _caches = require("../util/caches");
+
+var _pool = _interopRequireDefault(require("../util/pool"));
+
+var _types = require("../util/types");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const {
+  isArray
+} = Array;
+const {
+  memory
+} = _pool.default;
+const fragmentName = '#document-fragment';
+const textName = '#text';
+/**
+ * Typically passed either a single or list of DOM Nodes or a VTreeLike object.
+ *
+ * @param {ValidInput=} input
+ * @param {any=} attributes
+ * @param {any=} childNodes
+ * @param  {...any} rest
+ *
+ * @return {VTree}
+ */
+
+function createTree(input, attributes, childNodes, ...rest) {
+  /** @type {VTree | null} */
+  let entry = null; // Reuse a VTree if it has already been created and in the pool. This is an
+  // optimization and reliability check to ensure repeated calls to this
+  // function with the same reference produces consistent results.
+
+  if (memory.protected.has(input) || memory.allocated.has(input)) {
+    entry =
+    /** @type {VTree } */
+    input;
+  } // A fragment is used whenever an array is passed directly into createTree.
+  // This is also what is returned when no input is passed.
+  else if (!input || isArray(input)) {
+      const length = input ? input.length : 0;
+      childNodes = []; // When using an Array copy the Nodes in and ensure a valid top-level tree.
+
+      for (let i = 0; i < length; i++) {
+        if (!input) continue;
+        childNodes.push(input[i]);
+      }
+
+      entry = createTree(fragmentName, null, childNodes);
+    } // If a return value was found, end this function early.
+
+
+  if (entry) {
+    return entry;
+  }
+
+  const isObject = typeof input === 'object';
+  const inputAsHTMLEl =
+  /** @type {HTMLElement} */
+  input; // If the input passed has an 'ownerDocument' property, then assume it is a
+  // DOM-like Node object. This means we need to synchronize the DOM and this is
+  // an expensive operation.
+
+  if (input && isObject && 'ownerDocument' in inputAsHTMLEl) {
+    const {
+      nodeType
+    } = inputAsHTMLEl; // When passed a text node, simply migrate the value over into the new VTree
+    // associate in the NodeCache.
+
+    if (nodeType === 3) {
+      const vTree = createTree(textName, inputAsHTMLEl.nodeValue);
+
+      _caches.NodeCache.set(vTree, inputAsHTMLEl);
+
+      return vTree;
+    }
+
+    attributes = {};
+    childNodes = [];
+    const inputAttrs = inputAsHTMLEl.attributes; // We only scrape attributes from element nodes if they are available.
+
+    if (inputAsHTMLEl.nodeType === 1 && inputAttrs && inputAttrs.length) {
+      for (let i = 0; i < inputAttrs.length; i++) {
+        const {
+          name,
+          value
+        } = inputAttrs[i]; // If the attribute's value is empty, seek out the property instead.
+
+        if (value === _types.EMPTY.STR && name in inputAsHTMLEl) {
+          attributes[name] =
+          /** @type {any} */
+          input[name];
+          continue;
+        }
+
+        attributes[name] = value;
+      }
+    } // Get the child nodes from an Element or Fragment/Shadow Root.
+
+
+    if (inputAsHTMLEl.nodeType === 1 || inputAsHTMLEl.nodeType === 11) {
+      if (inputAsHTMLEl.childNodes.length) {
+        childNodes = [];
+
+        for (let i = 0; i < inputAsHTMLEl.childNodes.length; i++) {
+          /** @type {HTMLElement} */
+          const childNodeElement = inputAsHTMLEl.childNodes[i];
+          childNodes.push(createTree(childNodeElement));
+        }
+      }
+    } // FIXME This is going to hurt performance. Is there a better way to find a
+    // VTree from a DOM Node?
+
+
+    _caches.NodeCache.forEach((node, vTree) => {
+      if (node === input) {
+        entry = vTree;
+      }
+    });
+    /**
+     * If no VTree was previously bound this to DOM Node, create a brand new
+     * tree.
+     *
+     * @type {VTree} */
+
+
+    entry = entry || createTree(inputAsHTMLEl.nodeName, attributes, childNodes);
+    entry.attributes = attributes;
+    entry.childNodes.length = 0;
+    entry.childNodes.push(...childNodes);
+
+    _caches.NodeCache.set(entry, inputAsHTMLEl);
+
+    return entry;
+  } // Assume any remaining objects are VTree-like.
+
+
+  if (isObject) {
+    /** @type {VTreeLike} */
+    const {
+      rawNodeName,
+      nodeName,
+      nodeValue,
+      attributes,
+      childNodes,
+      children
+    } = input;
+    const treeName = rawNodeName || nodeName; // The priority of a VTreeLike input is nodeValue above all else. If this
+    // value is present, we assume a text-based element and that the intentions
+    // are setting the children to this value.
+
+    const vTree = createTree(treeName, attributes || null, children || childNodes); // Ensure nodeValue is properly copied over.
+
+    if (nodeValue) {
+      vTree.nodeValue = nodeValue;
+    }
+
+    return vTree;
+  } // Support JSX-style children being passed.
+
+
+  if (rest.length) {
+    childNodes = [childNodes, ...rest];
+  } // Allocate a new VTree from the pool.
+
+
+  entry = _pool.default.get();
+  const isTextNode = input === textName;
+  const isString = typeof input === 'string'; // This is a standard HTML element.
+
+  if (isString) {
+    entry.rawNodeName = input;
+    entry.nodeName = entry.rawNodeName.toLowerCase();
+  } // Otherwise treat this as a fragment, since we have no idea what type of
+  // element it is.
+  else {
+      entry.rawNodeName = input;
+      entry.nodeName = fragmentName;
+    } // Clear out and reset the remaining VTree attributes.
+
+
+  entry.nodeValue = _types.EMPTY.STR;
+  entry.key = _types.EMPTY.STR;
+  entry.childNodes.length = 0;
+  entry.attributes = {};
+  const useAttributes = isArray(attributes) || typeof attributes !== 'object';
+  const useNodes = useAttributes ? attributes : childNodes;
+  const allNodes = isArray(useNodes) ? useNodes : [useNodes]; // Ensure nodeType is set correctly, and if this is a text node, return early.
+
+  if (isTextNode) {
+    const nodeValue = allNodes.join(_types.EMPTY.STR);
+    entry.nodeType = 3;
+    entry.nodeValue = String(nodeValue || _types.EMPTY.STR);
+    return entry;
+  } else if (entry.nodeName === fragmentName) {
+    entry.nodeType = 11;
+  } else if (input === '#comment') {
+    entry.nodeType = 8;
+  } else {
+    entry.nodeType = 1;
+  }
+
+  if (useNodes && allNodes.length) {
+    for (let i = 0; i < allNodes.length; i++) {
+      const newNode = allNodes[i]; // Merge in arrays.
+
+      if (isArray(newNode)) {
+        entry.childNodes.push(...newNode);
+      } // Skip over `null` nodes.
+      else if (!newNode) {
+          continue;
+        } // Merge in true fragments, but not components or unknowns.
+        else if (newNode.nodeType === 11 && typeof newNode.rawNodeName === 'string') {
+            entry.childNodes.push(...newNode.childNodes);
+          } // Assume objects are vTrees.
+          else if (newNode && typeof newNode === 'object') {
+              entry.childNodes.push(createTree(newNode));
+            } // Last resort treat as text.
+            else {
+                entry.childNodes.push(createTree(textName, null, newNode));
+              }
+    }
+  }
+
+  if (attributes && typeof attributes === 'object' && !isArray(attributes)) {
+    entry.attributes = attributes;
+  } // If is a script tag and has a src attribute, key off that. We have a special
+  // handling of scripts to avoid accidentally re-executing a script when
+  // shifting position.
+
+
+  if (entry.nodeName === 'script' && entry.attributes.src) {
+    entry.key = String(entry.attributes.src);
+  } // Set the `key` prop if passed as an attr, overrides `script[src]`.
+
+
+  if (entry.attributes && 'key' in entry.attributes) {
+    entry.key = String(entry.attributes.key);
+  } // Only run the `forEach` if there are hooks to run.
+
+
+  if (_caches.CreateTreeHookCache.size) {
+    _caches.CreateTreeHookCache.forEach((fn, retVal) => {
+      // If the hook returns a value, replace the active entry.
+      if (retVal = fn(entry)) {
+        entry = createTree(retVal);
+      }
+    });
+  }
+
+  return entry;
+}
+
+module.exports = exports.default;
